@@ -8,7 +8,7 @@ import rl "vendor:raylib"
 WIDTH :: 600
 HEIGTH :: 600
 FPS :: 60
-NAME :: "app"
+NAME :: "base template"
 BACKGROUND :: rl.Color{0, 0, 28, 255}
 DEBUG :: true
 
