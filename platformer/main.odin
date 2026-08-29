@@ -11,7 +11,7 @@ FPS :: 60
 NAME :: "platformer"
 BACKGROUND :: rl.Color{0, 0, 28, 255}
 PLAYER_SIZE :: 64
-PLAYER_COLOR :: rl.Color{253, 28, 3, 255}
+PLAYER_COLOR :: rl.Color{76, 53, 83, 255}
 PLAYER_SPEED :: 100
 DEBUG :: true
 
@@ -50,9 +50,10 @@ main :: proc() {
         show_memory()
     }
     fmt.println("template for Raylib game")
+    rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGTH, NAME)
     defer rl.CloseWindow()
-    rl.SetWindowState({.WINDOW_RESIZABLE})
+    // rl.SetWindowState({.WINDOW_RESIZABLE})
     rl.SetTargetFPS(FPS)
 
     player_pos := rl.Vector2{WIDTH/2 - PLAYER_SIZE/2, HEIGTH/2 - PLAYER_SIZE/2}
