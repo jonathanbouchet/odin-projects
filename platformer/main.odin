@@ -15,6 +15,20 @@ PLAYER_COLOR :: rl.Color{76, 53, 83, 255}
 PLAYER_SPEED :: 100
 DEBUG :: true
 
+Player :: struct {
+    position: rl.Vector2,
+    velocity: rl.Vector2
+}
+
+set_direction :: proc(player: ^Player) {
+    player.velocity.x = 
+        (bool_to_32(rl.IsKeyDown(.RIGHT)) - bool_to_32(rl.IsKeyDown(.LEFT))) * PLAYER_SPEED
+}
+
+move_player :: proc(player: ^Player, dt: f32) {
+    player.position += player.velocity * dt
+}
+
 bool_to_32 :: proc(value: bool) -> f32 {
     if value {
         return 1.0
@@ -53,29 +67,22 @@ main :: proc() {
     rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGTH, NAME)
     defer rl.CloseWindow()
-    // rl.SetWindowState({.WINDOW_RESIZABLE})
     rl.SetTargetFPS(FPS)
 
-    player_pos := rl.Vector2{WIDTH/2 - PLAYER_SIZE/2, HEIGTH/2 - PLAYER_SIZE/2}
-    player_velocity: rl.Vector2
+    player := Player{position=rl.Vector2{WIDTH/2 - PLAYER_SIZE/2, HEIGTH/2 - PLAYER_SIZE/2}, velocity={}}
 
     for !rl.WindowShouldClose(){
         // logic
         dt := rl.GetFrameTime()
 
         // update
-        player_velocity.x = (bool_to_32(rl.IsKeyDown(.RIGHT)) - bool_to_32(rl.IsKeyDown(.LEFT))) * PLAYER_SPEED
-        player_pos += player_velocity * dt
-        // if rl.IsKeyDown(.LEFT){
-        //     player_pos.x -= 10
-        // }else if rl.IsKeyDown(.RIGHT){
-        //     player_pos.x += 10
-        // }
+        set_direction(&player)
+        move_player(&player, dt)
 
         // rendering
         rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND)
-        rl.DrawRectangleV(player_pos, PLAYER_SIZE, PLAYER_COLOR)
+        rl.DrawRectangleV(player.position, PLAYER_SIZE, PLAYER_COLOR)
         if DEBUG {
             draw_debug()
         }
