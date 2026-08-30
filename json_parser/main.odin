@@ -27,5 +27,7 @@ main :: proc(){
         return
     }
     defer delete(level.platforms)
-    fmt.println("Platforms:", level.platforms)
+    fmt.printf("debug: %v, type: %v\n", level.platforms[:], typeid_of(type_of(level.platforms)))
+    fmt.printf("debug: %v, type: %v\n", level.debug, typeid_of(type_of(level.debug)))
+    fmt.printf("name: %v, type: %v\n",level.name, typeid_of(type_of(level.name)))
 }
