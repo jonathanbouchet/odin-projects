@@ -27,4 +27,5 @@ set_direction :: proc(paddle: ^Paddle) {
 
 move_player :: proc(paddle: ^Paddle, dt: f32) {
     paddle.position += paddle.velocity * dt
+    paddle.position.x = clamp(paddle.position.x, 0, SCREEN_SIZE - PADDLE_WIDTH)
 }
