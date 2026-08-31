@@ -45,7 +45,8 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
-    paddle := Paddle{position=rl.Vector2{0, PADDLE_POS_Y}, velocity=rl.Vector2{0, 0}}
+    paddle := Paddle{position=rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y}, velocity=rl.Vector2{0, 0}}
+    ball := Ball{position=rl.Vector2{SCREEN_SIZE/2, BALL_START_Y}, velocity=rl.Vector2{0, 0}}
 
     for !rl.WindowShouldClose(){
         // logic
@@ -68,6 +69,7 @@ main :: proc() {
             paddle.position.x, paddle.position.y, PADDLE_WIDTH, PADDLE_HEIGHT
         }
         rl.DrawRectangleRec(paddle_rect, rl.Color{0, 0, 28, 255})
+        rl.DrawCircleV(ball.position, BALL_RADIUS, rl.RED)
 
         if DEBUG {
             draw_debug(zoom = camera.zoom )
