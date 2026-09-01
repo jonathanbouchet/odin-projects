@@ -72,7 +72,27 @@ check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_
             set_ball_direction(ball=ball, vel=ball_direction)
         }
     }
+}
 
+check_collision_walls_ball :: proc(ball: ^Ball){
+    if ball.position.x + BALL_RADIUS > SCREEN_SIZE{
+        collision_normal := rl.Vector2{-1, 0}
+        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        set_ball_position(ball, rl.Vector2{SCREEN_SIZE - BALL_RADIUS, ball.position.y })
+        set_ball_direction(ball=ball, vel=ball_direction)
+    }
+    if ball.position.x -BALL_RADIUS < 0{
+        collision_normal := rl.Vector2{1, 0}
+        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        set_ball_position(ball, rl.Vector2{BALL_RADIUS, ball.position.y })
+        set_ball_direction(ball=ball, vel=ball_direction)
+    }
+    if ball.position.y - BALL_RADIUS< 0{
+        collision_normal := rl.Vector2{0, 1}
+        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        set_ball_position(ball, rl.Vector2{ball.position.x, BALL_RADIUS })
+        set_ball_direction(ball=ball, vel=ball_direction)
+    }
 }
 
 main :: proc() {
@@ -114,6 +134,7 @@ main :: proc() {
             move_paddle(&paddle, dt)
             move_ball(&ball, dt)
             previous_ball_pos := ball.position
+            check_collision_walls_ball(ball=&ball)
             check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
         }
 
