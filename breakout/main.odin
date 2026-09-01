@@ -48,24 +48,29 @@ restart :: proc(paddle: ^Paddle, ball: ^Ball, zoom: f32){
 }
 
 check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_pos: rl.Vector2){
-    collision_normal: rl.Vector2
-    if previous_ball_pos.y < paddle.position.y + PADDLE_HEIGHT{
-        collision_normal = {0, -1}
-        set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y - BALL_RADIUS})
-    }
-    if previous_ball_pos.y > paddle.position.y + PADDLE_HEIGHT{
-        collision_normal = {0, 1}
-        set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y + PADDLE_HEIGHT + BALL_RADIUS})
-    }
-    if previous_ball_pos.x < paddle.position.x{
-        collision_normal = {-1, 0}
-    }
-    if previous_ball_pos.x > paddle.position.x + PADDLE_WIDTH{
-        collision_normal = {1, 0}
-    }
-    if collision_normal != 0{
-        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
-        set_ball_direction(ball=ball, vel=ball_direction)
+    paddle_rect := rl.Rectangle{paddle.position.x, paddle.position.y, PADDLE_WIDTH, PADDLE_HEIGHT}
+    ball_center := ball.position
+    ball_radius := f32(BALL_RADIUS)
+    if rl.CheckCollisionCircleRec(center=ball_center, radius=ball_radius, rec=paddle_rect){
+        collision_normal: rl.Vector2
+        if previous_ball_pos.y < paddle.position.y + PADDLE_HEIGHT{
+            collision_normal = {0, -1}
+            set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y - BALL_RADIUS})
+        }
+        if previous_ball_pos.y > paddle.position.y + PADDLE_HEIGHT{
+            collision_normal = {0, 1}
+            set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y + PADDLE_HEIGHT + BALL_RADIUS})
+        }
+        if previous_ball_pos.x < paddle.position.x{
+            collision_normal = {-1, 0}
+        }
+        if previous_ball_pos.x > paddle.position.x + PADDLE_WIDTH{
+            collision_normal = {1, 0}
+        }
+        if collision_normal != 0{
+            ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+            set_ball_direction(ball=ball, vel=ball_direction)
+        }
     }
 
 }
@@ -109,7 +114,7 @@ main :: proc() {
             move_paddle(&paddle, dt)
             move_ball(&ball, dt)
             previous_ball_pos := ball.position
-            // check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
+            check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
         }
 
 

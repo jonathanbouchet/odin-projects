@@ -2,7 +2,7 @@ package breakout
 
 import rl "vendor:raylib"
 
-BALL_SPEED :: 100
+BALL_SPEED :: 200
 BALL_RADIUS :: 5
 BALL_START_Y :: 160
 
