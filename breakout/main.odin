@@ -13,6 +13,8 @@ NAME :: "breakout"
 BACKGROUND :: rl.Color{15, 15, 15, 255}
 DEBUG :: true
 
+game_started: bool
+
 show_memory :: proc() {
     track: mem.Tracking_Allocator
     mem.tracking_allocator_init(&track, context.allocator)
@@ -35,6 +37,12 @@ draw_debug :: proc(zoom: f32) {
     rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
 }
 
+restart :: proc(paddle: ^Paddle, ball: ^Ball){
+    set_paddle_position(paddle, rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y})
+    set_ball_position(ball, rl.Vector2{SCREEN_SIZE/2, BALL_START_Y})
+    game_started = false
+}
+
 main :: proc() {
     if DEBUG {
         show_memory()
@@ -45,16 +53,34 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
-    paddle := Paddle{position=rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y}, velocity=rl.Vector2{0, 0}}
-    ball := Ball{position=rl.Vector2{SCREEN_SIZE/2, BALL_START_Y}, velocity=rl.Vector2{0, 0}}
+    // paddle := Paddle{position=rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y}, velocity=rl.Vector2{0, 0}}
+    paddle := Paddle{position=rl.Vector2{0, 0}, velocity=rl.Vector2{0, 0}}
+    // direction is set in restart()
+    // restart(&paddle)
+    // ball := Ball{position=rl.Vector2{SCREEN_SIZE/2, BALL_START_Y}, velocity=rl.Vector2{0, 0}}
+    ball := Ball{}
+    restart(&paddle, &ball)
+
 
     for !rl.WindowShouldClose(){
         // logic
-        dt := rl.GetFrameTime()
+        // dt := rl.GetFrameTime()
+        dt: f32
+        if !game_started{
+            if rl.IsKeyPressed(.SPACE){
+                set_ball_direction(&ball, rl.Vector2{0, 1})
+                game_started = true
+            }
+        }else{
+            dt = rl.GetFrameTime()
+            set_paddle_direction(&paddle)
+            move_paddle(&paddle, dt)
+            move_ball(&ball, dt)
+        }
 
         // update
-        set_direction(&paddle)
-        move_player(&paddle, dt)
+        // set_paddle_direction(&paddle)
+        // move_paddle(&paddle, dt)
 
         // rendering
         rl.BeginDrawing()

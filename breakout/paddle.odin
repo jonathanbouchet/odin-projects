@@ -20,12 +20,16 @@ Paddle :: struct {
     velocity: rl.Vector2
 }
 
-set_direction :: proc(paddle: ^Paddle) {
+set_paddle_position :: proc(paddle: ^Paddle, pos: rl.Vector2){
+    paddle.position = pos
+}
+
+set_paddle_direction :: proc(paddle: ^Paddle) {
     paddle.velocity.x = 
         (bool_to_32(rl.IsKeyDown(.RIGHT)) - bool_to_32(rl.IsKeyDown(.LEFT))) * PADDLE_SPEED
 }
 
-move_player :: proc(paddle: ^Paddle, dt: f32) {
+move_paddle :: proc(paddle: ^Paddle, dt: f32) {
     paddle.position += paddle.velocity * dt
     paddle.position.x = clamp(paddle.position.x, 0, SCREEN_SIZE - PADDLE_WIDTH)
 }
