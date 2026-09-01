@@ -2,6 +2,8 @@ package breakout
 
 import "core:fmt"
 import "core:mem"
+import "core:math/rand"
+import "core:math/linalg"
 import rl "vendor:raylib"
 
 SCREEN_SIZE :: 320
@@ -37,10 +39,35 @@ draw_debug :: proc(zoom: f32) {
     rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
 }
 
-restart :: proc(paddle: ^Paddle, ball: ^Ball){
+restart :: proc(paddle: ^Paddle, ball: ^Ball, zoom: f32){
     set_paddle_position(paddle, rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y})
-    set_ball_position(ball, rl.Vector2{SCREEN_SIZE/2, BALL_START_Y})
+    ball_random_pos := rl.Vector2{rand.float32_range(f32(0), f32(WIDTH/zoom)), rand.float32_range(f32(0), f32(200/zoom))} 
+    // set_ball_position(ball, rl.Vector2{SCREEN_SIZE/2, BALL_START_Y})
+    set_ball_position(ball, ball_random_pos)
     game_started = false
+}
+
+check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_pos: rl.Vector2){
+    collision_normal: rl.Vector2
+    if previous_ball_pos.y < paddle.position.y + PADDLE_HEIGHT{
+        collision_normal = {0, -1}
+        set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y - BALL_RADIUS})
+    }
+    if previous_ball_pos.y > paddle.position.y + PADDLE_HEIGHT{
+        collision_normal = {0, 1}
+        set_ball_position(ball, rl.Vector2{ball.position.x, paddle.position.y + PADDLE_HEIGHT + BALL_RADIUS})
+    }
+    if previous_ball_pos.x < paddle.position.x{
+        collision_normal = {-1, 0}
+    }
+    if previous_ball_pos.x > paddle.position.x + PADDLE_WIDTH{
+        collision_normal = {1, 0}
+    }
+    if collision_normal != 0{
+        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        set_ball_direction(ball=ball, vel=ball_direction)
+    }
+
 }
 
 main :: proc() {
@@ -59,7 +86,7 @@ main :: proc() {
     // restart(&paddle)
     // ball := Ball{position=rl.Vector2{SCREEN_SIZE/2, BALL_START_Y}, velocity=rl.Vector2{0, 0}}
     ball := Ball{}
-    restart(&paddle, &ball)
+    restart(paddle=&paddle, ball=&ball, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
 
 
     for !rl.WindowShouldClose(){
@@ -68,7 +95,12 @@ main :: proc() {
         dt: f32
         if !game_started{
             if rl.IsKeyPressed(.SPACE){
-                set_ball_direction(&ball, rl.Vector2{0, 1})
+                // set_ball_direction(&ball, rl.Vector2{0, 1}) // set a constant direction
+                paddle_mid_position := rl.Vector2{paddle.position.x + PADDLE_WIDTH/2, paddle.position.y}
+                ball_position := ball.position
+                ball_2_paddle := paddle_mid_position - ball_position 
+                ball_direction_2_paddle := linalg.normalize(ball_2_paddle)
+                set_ball_direction(ball=&ball, vel=ball_direction_2_paddle)
                 game_started = true
             }
         }else{
@@ -76,7 +108,11 @@ main :: proc() {
             set_paddle_direction(&paddle)
             move_paddle(&paddle, dt)
             move_ball(&ball, dt)
+            previous_ball_pos := ball.position
+            // check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
         }
+
+
 
         // update
         // set_paddle_direction(&paddle)
@@ -98,7 +134,7 @@ main :: proc() {
         rl.DrawCircleV(ball.position, BALL_RADIUS, rl.RED)
 
         if DEBUG {
-            draw_debug(zoom = camera.zoom )
+            draw_debug(zoom = camera.zoom)
         }
         
         rl.EndMode2D()
