@@ -95,6 +95,13 @@ check_collision_walls_ball :: proc(ball: ^Ball){
     }
 }
 
+check_miss_paddle_ball :: proc(ball: Ball) -> bool{
+    if ball.position.y > SCREEN_SIZE + BALL_RADIUS{
+        return true
+    }
+    return false
+}
+
 main :: proc() {
     if DEBUG {
         show_memory()
@@ -136,13 +143,10 @@ main :: proc() {
             previous_ball_pos := ball.position
             check_collision_walls_ball(ball=&ball)
             check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
+            if check_miss_paddle_ball(ball){
+                restart(paddle=&paddle, ball=&ball, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
+            }
         }
-
-
-
-        // update
-        // set_paddle_direction(&paddle)
-        // move_paddle(&paddle, dt)
 
         // rendering
         rl.BeginDrawing()

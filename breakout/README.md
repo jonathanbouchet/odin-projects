@@ -24,3 +24,35 @@ draw_debug :: proc(zoom: f32) {
 ```odin
 paddle.position.x = clamp(paddle.position.x, 0, SCREEN_SIZE - PADDLE_WIDTH)
 ``` 
+
+- when a `proc` is using a structure in `read-only` mode, there's no need of pointer:
+```odin
+draw_paddle :: proc(paddle: Paddle, texture: rl.Texture2D) {
+    rl.DrawTexturePro(
+        texture,
+        source_rect,
+        rl.Rectangle{
+            paddle.position.x,
+            paddle.position.y,
+            paddle.size.x,
+            paddle.size.y,
+        },
+        {0, 0},
+        0,
+        rl.WHITE,
+    )
+}
+```
+but when you modify a structure, a pointer should be used:
+```odin
+update_paddle :: proc(paddle: ^Paddle) {
+    if rl.IsKeyDown(.RIGHT) {
+        paddle.position.x += paddle.speed
+    }
+
+    if rl.IsKeyDown(.LEFT) {
+        paddle.position.x -= paddle.speed
+    }
+}
+```
+Inside a procedure receiving `^Paddle`, Odin automatically dereferences fields
