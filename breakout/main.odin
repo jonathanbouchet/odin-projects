@@ -14,6 +14,14 @@ NAME :: "breakout"
 // BACKGROUND :: rl.Color{0, 0, 28, 255}
 BACKGROUND :: rl.Color{15, 15, 15, 255}
 DEBUG :: true
+NUM_BLOCKS_X :: 10
+NUM_BLOCKS_Y :: 8
+BLOCK_WIDTH :: 28
+BLOCK_HEIGHT :: 8
+
+Blocks :: struct{
+    status: [NUM_BLOCKS_X][NUM_BLOCKS_Y]bool
+}
 
 game_started: bool
 
@@ -39,12 +47,18 @@ draw_debug :: proc(zoom: f32) {
     rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
 }
 
-restart :: proc(paddle: ^Paddle, ball: ^Ball, zoom: f32){
+restart :: proc(paddle: ^Paddle, ball: ^Ball, blocks: ^Blocks, zoom: f32){
     set_paddle_position(paddle, rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y})
     ball_random_pos := rl.Vector2{rand.float32_range(f32(0), f32(WIDTH/zoom)), rand.float32_range(f32(0), f32(200/zoom))} 
     // set_ball_position(ball, rl.Vector2{SCREEN_SIZE/2, BALL_START_Y})
     set_ball_position(ball, ball_random_pos)
     game_started = false
+    // initialize all blocks to false at the start of each round
+    for i in 0..<NUM_BLOCKS_X{
+        for j in 0..<NUM_BLOCKS_Y{
+            blocks.status[i][j] = true
+        }
+    }
 }
 
 check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_pos: rl.Vector2){
@@ -102,6 +116,23 @@ check_miss_paddle_ball :: proc(ball: Ball) -> bool{
     return false
 }
 
+draw_blocks :: proc(blocks: Blocks){
+    for i in 0..<NUM_BLOCKS_X{
+        for j in 0..<NUM_BLOCKS_Y{
+            if blocks.status == false{
+                continue
+            }
+            block_rect := rl.Rectangle{
+                f32(20 + i * BLOCK_WIDTH),
+                f32(40 + j * BLOCK_HEIGHT),
+                BLOCK_WIDTH,
+                BLOCK_HEIGHT
+            }
+            rl.DrawRectangleRec(block_rect, rl.DARKPURPLE)
+        }
+    }
+}
+
 main :: proc() {
     if DEBUG {
         show_memory()
@@ -118,7 +149,8 @@ main :: proc() {
     // restart(&paddle)
     // ball := Ball{position=rl.Vector2{SCREEN_SIZE/2, BALL_START_Y}, velocity=rl.Vector2{0, 0}}
     ball := Ball{}
-    restart(paddle=&paddle, ball=&ball, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
+    blocks := Blocks{}
+    restart(paddle=&paddle, ball=&ball, blocks=&blocks, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
 
 
     for !rl.WindowShouldClose(){
@@ -144,7 +176,7 @@ main :: proc() {
             check_collision_walls_ball(ball=&ball)
             check_collision_paddle_ball(ball=&ball, paddle=&paddle, previous_ball_pos=previous_ball_pos)
             if check_miss_paddle_ball(ball){
-                restart(paddle=&paddle, ball=&ball, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
+                restart(paddle=&paddle, ball=&ball, blocks=&blocks, zoom=f32(rl.GetScreenHeight()) / SCREEN_SIZE)
             }
         }
 
@@ -161,6 +193,7 @@ main :: proc() {
             paddle.position.x, paddle.position.y, PADDLE_WIDTH, PADDLE_HEIGHT
         }
         rl.DrawRectangleRec(paddle_rect, rl.Color{0, 0, 28, 255})
+        draw_blocks(blocks=blocks)
         rl.DrawCircleV(ball.position, BALL_RADIUS, rl.RED)
 
         if DEBUG {
