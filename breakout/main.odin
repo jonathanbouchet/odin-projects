@@ -12,7 +12,8 @@ HEIGTH :: 640
 FPS :: 60
 NAME :: "breakout"
 // BACKGROUND :: rl.Color{0, 0, 28, 255}
-BACKGROUND :: rl.Color{15, 15, 15, 255}
+// BACKGROUND :: rl.Color{15, 15, 15, 255}
+BACKGROUND :: rl.Color{ 150, 190, 220, 255 }
 DEBUG :: true
 NUM_BLOCKS_X :: 10
 NUM_BLOCKS_Y :: 8
@@ -20,7 +21,38 @@ BLOCK_WIDTH :: 28
 BLOCK_HEIGHT :: 8
 
 Blocks :: struct{
-    status: [NUM_BLOCKS_X][NUM_BLOCKS_Y]bool
+    status: [NUM_BLOCKS_X][NUM_BLOCKS_Y]bool,
+    // color : enum{
+    //     YELLOW,
+    //     GREEN,
+    //     ORANGE,
+    //     RED,
+    // },
+}
+
+block_color :: enum{
+        YELLOW,
+        GREEN,
+        ORANGE,
+        RED,
+}
+
+row_colors:= [NUM_BLOCKS_Y]block_color{
+    .RED,
+    .RED,
+    .ORANGE,
+    .ORANGE,
+    .GREEN,
+    .GREEN,
+    .YELLOW,
+    .YELLOW
+}
+//an enum array
+block_color_values := [block_color]rl.Color{
+    .YELLOW = {253, 249, 159, 255},
+    .RED = {250, 90, 85, 255},
+    .GREEN = {180, 245, 190, 255},
+    .ORANGE = {170, 120, 250, 255},
 }
 
 game_started: bool
@@ -43,8 +75,10 @@ show_memory :: proc() {
 
 draw_debug :: proc(zoom: f32) {
     rl.DrawFPS(0, 0)
-    rl.DrawLineV(rl.Vector2{0, HEIGTH/(2*zoom)}, {WIDTH, HEIGTH/(2*zoom)}, rl.Color{57, 255, 20, 255})
-    rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
+    // rl.DrawLineV(rl.Vector2{0, HEIGTH/(2*zoom)}, {WIDTH, HEIGTH/(2*zoom)}, rl.Color{57, 255, 20, 255})
+    // rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
+    rl.DrawLineV(rl.Vector2{0, HEIGTH/(2*zoom)}, {WIDTH, HEIGTH/(2*zoom)}, rl.BLACK)
+    rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.BLACK)
 }
 
 restart :: proc(paddle: ^Paddle, ball: ^Ball, blocks: ^Blocks, zoom: f32){
@@ -128,7 +162,19 @@ draw_blocks :: proc(blocks: Blocks){
                 BLOCK_WIDTH,
                 BLOCK_HEIGHT
             }
-            rl.DrawRectangleRec(block_rect, rl.DARKPURPLE)
+
+            top_left := rl.Vector2{block_rect.x, block_rect.y}
+            top_right := rl.Vector2{block_rect.x + block_rect.width, block_rect.y}
+            bottom_left := rl.Vector2{block_rect.x, block_rect.y + block_rect.height}
+            bottom_right := rl.Vector2{block_rect.x + block_rect.width, block_rect.y + block_rect.height}
+
+            // rl.DrawRectangleRec(block_rect, rl.DARKPURPLE)
+            // useing the enum color
+            rl.DrawRectangleRec(block_rect, block_color_values[row_colors[j]])
+            rl.DrawLineEx(top_left, top_right, 1, rl.Color{255, 255, 150, 100})
+            rl.DrawLineEx(top_left, bottom_left, 1, rl.Color{255, 255, 150, 100})
+            rl.DrawLineEx(top_right, bottom_right, 2, rl.Color{0, 0, 50, 100})
+            rl.DrawLineEx(bottom_left, bottom_right, 2, rl.Color{0, 0, 50, 100})
         }
     }
 }
