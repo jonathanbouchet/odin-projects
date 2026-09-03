@@ -136,6 +136,12 @@ check_collisions_blocks_ball :: proc(blocks: ^Blocks, ball: ^Ball, previous_ball
                 if previous_ball_pos.x > block_rect.x + BLOCK_WIDTH{
                     collision_normal += {1, 0}
                 }
+                // if block_exists(i + int(collision_normal.x),j, blocks.status[i][j]){
+                //     collision_normal.x = 0
+                // }
+                // if block_exists(i, j + int(collision_normal.y), blocks.status[i][j]){
+                //     collision_normal.y = 0
+                // }
                 if collision_normal != 0{
                     ball_direction := reflect(ball.velocity, collision_normal)
                     set_ball_direction(ball=ball, vel=ball_direction)

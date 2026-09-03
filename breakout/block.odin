@@ -44,3 +44,10 @@ get_block_rect :: proc(i, j: int) -> rl.Rectangle{
         BLOCK_HEIGHT
     }
 }
+
+block_exists :: proc(i, j: int, status: bool) -> bool {
+    if i < 0 || j < 0 || i >= NUM_BLOCKS_X || j >= NUM_BLOCKS_Y{
+        return false
+    } 
+    return status
+}

@@ -56,3 +56,7 @@ update_paddle :: proc(paddle: ^Paddle) {
 }
 ```
 Inside a procedure receiving `^Paddle`, Odin automatically dereferences fields
+
+- in `check_collisions_block_ball`:
+    - the `previous_ball_pos` is used for the reflection angle calculation instead of the current ball position. 
+    - The reason is because at the `current_position`, the ball may already be _inside_ the block so we want the ball properties before it happens
