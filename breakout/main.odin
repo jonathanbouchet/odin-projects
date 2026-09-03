@@ -20,14 +20,9 @@ NUM_BLOCKS_Y :: 8
 BLOCK_WIDTH :: 28
 BLOCK_HEIGHT :: 8
 
+// TO DO: refactor to block.odin
 Blocks :: struct{
     status: [NUM_BLOCKS_X][NUM_BLOCKS_Y]bool,
-    // color : enum{
-    //     YELLOW,
-    //     GREEN,
-    //     ORANGE,
-    //     RED,
-    // },
 }
 
 block_color :: enum{
@@ -83,8 +78,7 @@ draw_debug :: proc(zoom: f32) {
 
 restart :: proc(paddle: ^Paddle, ball: ^Ball, blocks: ^Blocks, zoom: f32){
     set_paddle_position(paddle, rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y})
-    ball_random_pos := rl.Vector2{rand.float32_range(f32(0), f32(WIDTH/zoom)), rand.float32_range(f32(0), f32(200/zoom))} 
-    // set_ball_position(ball, rl.Vector2{SCREEN_SIZE/2, BALL_START_Y})
+    ball_random_pos := rl.Vector2{rand.float32_range(f32(0), f32(WIDTH/zoom)), rand.float32_range(f32(200/zoom), f32(HEIGTH/2/zoom))} 
     set_ball_position(ball, ball_random_pos)
     game_started = false
     // initialize all blocks to false at the start of each round
@@ -93,6 +87,11 @@ restart :: proc(paddle: ^Paddle, ball: ^Ball, blocks: ^Blocks, zoom: f32){
             blocks.status[i][j] = true
         }
     }
+}
+
+reflect :: proc(dir, normal: rl.Vector2) -> rl.Vector2{
+    new_dir := linalg.reflect(dir, linalg.normalize(normal))
+    return linalg.normalize(new_dir)
 }
 
 check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_pos: rl.Vector2){
@@ -116,7 +115,7 @@ check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_
             collision_normal = {1, 0}
         }
         if collision_normal != 0{
-            ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+            ball_direction := reflect(ball.velocity, collision_normal)
             set_ball_direction(ball=ball, vel=ball_direction)
         }
     }
@@ -125,19 +124,19 @@ check_collision_paddle_ball :: proc(paddle: ^Paddle, ball: ^Ball, previous_ball_
 check_collision_walls_ball :: proc(ball: ^Ball){
     if ball.position.x + BALL_RADIUS > SCREEN_SIZE{
         collision_normal := rl.Vector2{-1, 0}
-        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        ball_direction := reflect(ball.velocity, collision_normal)
         set_ball_position(ball, rl.Vector2{SCREEN_SIZE - BALL_RADIUS, ball.position.y })
         set_ball_direction(ball=ball, vel=ball_direction)
     }
     if ball.position.x -BALL_RADIUS < 0{
         collision_normal := rl.Vector2{1, 0}
-        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        ball_direction := reflect(ball.velocity, collision_normal)
         set_ball_position(ball, rl.Vector2{BALL_RADIUS, ball.position.y })
         set_ball_direction(ball=ball, vel=ball_direction)
     }
     if ball.position.y - BALL_RADIUS< 0{
         collision_normal := rl.Vector2{0, 1}
-        ball_direction := linalg.normalize(linalg.reflect(ball.velocity, linalg.normalize(collision_normal)))
+        ball_direction := reflect(ball.velocity, collision_normal)
         set_ball_position(ball, rl.Vector2{ball.position.x, BALL_RADIUS })
         set_ball_direction(ball=ball, vel=ball_direction)
     }
@@ -149,6 +148,19 @@ check_miss_paddle_ball :: proc(ball: Ball) -> bool{
     }
     return false
 }
+// TO DO: refactor to block.odin
+get_block_rect :: proc(i, j: int) -> rl.Rectangle{
+    return {
+        f32(20 + i * BLOCK_WIDTH),
+        f32(40 + j * BLOCK_HEIGHT),
+        BLOCK_WIDTH,
+        BLOCK_HEIGHT
+    }
+}
+
+check_collisions_blocks_ball :: proc(){
+
+}
 
 draw_blocks :: proc(blocks: Blocks){
     for i in 0..<NUM_BLOCKS_X{
@@ -156,12 +168,7 @@ draw_blocks :: proc(blocks: Blocks){
             if blocks.status == false{
                 continue
             }
-            block_rect := rl.Rectangle{
-                f32(20 + i * BLOCK_WIDTH),
-                f32(40 + j * BLOCK_HEIGHT),
-                BLOCK_WIDTH,
-                BLOCK_HEIGHT
-            }
+            block_rect := get_block_rect(i, j)
 
             top_left := rl.Vector2{block_rect.x, block_rect.y}
             top_right := rl.Vector2{block_rect.x + block_rect.width, block_rect.y}
