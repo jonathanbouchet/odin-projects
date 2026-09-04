@@ -10,7 +10,8 @@ WIDTH :: 600
 HEIGHT :: 600
 RAD2DEG :: 180.0
 
-NUM_GROUND :: 5
+NUM_GROUND :: 10
+NUM_BOX :: 1
 
 show_memory :: proc() {
     track: mem.Tracking_Allocator
@@ -87,7 +88,7 @@ main :: proc(){
     for i in 0..<NUM_GROUND{
         entity: ^Entity = &ground_entities[i]
         bodyDef: b2.BodyDef = b2.DefaultBodyDef()
-        bodyDef.position = rl.Vector2{ (2. * f32(i) + 2.0) * f32(groundExtent.x), HEIGHT - groundExtent.y - 100.0}
+        bodyDef.position = rl.Vector2{ (2. * f32(i) + 2.0) * f32(groundExtent.x), HEIGHT - groundExtent.y - 0.0}
 
         entity.bodyId = b2.CreateBody(worldId, bodyDef)
         entity.extent = groundExtent
@@ -96,13 +97,71 @@ main :: proc(){
         _ = b2.CreatePolygonShape(entity.bodyId, shape_def, &groupPolygon) // this requires the result to be handled
     }
 
+    box_entities: [NUM_BOX]Entity
 
+    for i in 0..<NUM_BOX{
+        y:= HEIGHT - groundExtent.y - 400.0 - (f32(2.5) * f32(i) + 2.0) * boxExtent.y - 20.0
+        x:= 0.25 * WIDTH + (3.0 * f32(1.0) - f32(i) - 3.0) * boxExtent.x
+        entity: ^Entity = &box_entities[i]
+        bodyDef: b2.BodyDef = b2.DefaultBodyDef()
+        bodyDef.type = .dynamicBody
+
+        bodyDef.position = rl.Vector2{ x, y }
+        entity.bodyId = b2.CreateBody(worldId, bodyDef)
+        entity.texture = boxTexture
+        entity.extent = boxExtent
+        shape_def := b2.DefaultShapeDef()
+        _ = b2.CreatePolygonShape(entity.bodyId, shape_def, &boxPolygon)
+    }
+
+    // circular body
+    tmp_body: b2.BodyDef = b2.DefaultBodyDef()
+    tmp_body.type = .dynamicBody
+    tmp_body.position = rl.Vector2{ 500, 50.0}
+
+    ballBody: b2.BodyId = b2.CreateBody(worldId, tmp_body)
+    circle: b2.Circle = {0, 0}
+    circle.center = rl.Vector2{ 0.0, 0.0 }
+    circle.radius = 30
+
+    shape_def:= b2.DefaultShapeDef()
+    shape_def.density = f32(1.0)
+    shape_def.material.friction = f32(0.3)
+    shape_def.material.restitution = f32(1)
+
+    _ = b2.CreateCircleShape(ballBody, shape_def, &circle)
+
+    pause: bool = true
     for !rl.WindowShouldClose(){
+        // logic
+        dt:= rl.GetFrameTime()
+        //update
+        if rl.IsKeyPressed(.SPACE){
+            pause = !pause
+        }
+        if !pause {
+			delta_time := rl.GetFrameTime()
+			b2.World_Step(worldId, delta_time, 4)
+		}
+
+        //rendering
         rl.BeginDrawing()
         rl.ClearBackground({25, 25, 25, 255})
         for i in 0..<NUM_GROUND{
 			draw_entity(ground_entities[i]);
 		}
+
+        for i in 0..<NUM_BOX{
+			draw_entity(box_entities[i]);
+		}
+        ball_position:= b2.Body_GetPosition(ballBody)
+
+        rl.DrawCircle(
+            i32(ball_position.x),
+            i32(ball_position.y),
+            circle.radius ,
+            rl.RED
+        )
         rl.EndDrawing()
     }
 }
