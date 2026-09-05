@@ -24,6 +24,10 @@ set_paddle_position :: proc(paddle: ^Paddle, pos: rl.Vector2){
     paddle.position = pos
 }
 
+get_paddle_position :: proc(paddle: Paddle) -> rl.Vector2{
+    return paddle.position
+}
+
 set_paddle_direction :: proc(paddle: ^Paddle) {
     paddle.velocity.x = 
         (bool_to_32(rl.IsKeyDown(.RIGHT)) - bool_to_32(rl.IsKeyDown(.LEFT))) * PADDLE_SPEED
@@ -33,3 +37,4 @@ move_paddle :: proc(paddle: ^Paddle, dt: f32) {
     paddle.position += paddle.velocity * dt
     paddle.position.x = clamp(paddle.position.x, 0, SCREEN_SIZE - PADDLE_WIDTH)
 }
+

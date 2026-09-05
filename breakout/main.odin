@@ -9,7 +9,7 @@ import rl "vendor:raylib"
 SCREEN_SIZE :: 320
 WIDTH :: 640
 HEIGTH :: 640
-FPS :: 60
+FPS :: 30
 NAME :: "breakout"
 // BACKGROUND :: rl.Color{0, 0, 28, 255}
 // BACKGROUND :: rl.Color{15, 15, 15, 255}
@@ -20,6 +20,7 @@ game_started: bool
 game_over: bool
 score: int = 0
 previous_score: int
+accumulated_time: f32
 
 show_memory :: proc() {
     track: mem.Tracking_Allocator
@@ -193,6 +194,9 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
+     ball_texture := rl.LoadTexture("ball.png")
+     paddle_texture := rl.LoadTexture("paddle.png")
+
     // paddle := Paddle{position=rl.Vector2{SCREEN_SIZE/2 - PADDLE_WIDTH/2, PADDLE_POS_Y}, velocity=rl.Vector2{0, 0}}
     paddle := Paddle{position=rl.Vector2{0, 0}, velocity=rl.Vector2{0, 0}}
     // direction is set in restart()
@@ -207,6 +211,7 @@ main :: proc() {
         // logic
         // dt := rl.GetFrameTime()
         dt: f32
+        DT :: 1.0 / 60.0
         if !game_started{
             if rl.IsKeyPressed(.SPACE){
                 // set_ball_direction(&ball, rl.Vector2{0, 1}) // set a constant direction
@@ -219,6 +224,7 @@ main :: proc() {
             }
         }else{
             dt = rl.GetFrameTime()
+            accumulated_time += rl.GetFrameTime()
             set_paddle_direction(&paddle)
             move_paddle(&paddle, dt)
             previous_ball_pos := ball.position // we get the previous ball position before updating the current one
@@ -243,9 +249,14 @@ main :: proc() {
         paddle_rect := rl.Rectangle{
             paddle.position.x, paddle.position.y, PADDLE_WIDTH, PADDLE_HEIGHT
         }
-        rl.DrawRectangleRec(paddle_rect, rl.Color{0, 0, 28, 255})
+        // draw paddle
+        // rl.DrawRectangleRec(paddle_rect, rl.Color{0, 0, 28, 255}) // this is using simple Rectangle with a color
+        rl.DrawTextureV(paddle_texture, get_paddle_position(paddle), rl.WHITE)
+        // draw blocks
         draw_blocks(blocks=blocks)
-        rl.DrawCircleV(ball.position, BALL_RADIUS, rl.RED)
+        // draw ball
+        // rl.DrawCircleV(ball.position, BALL_RADIUS, rl.RED) //this is using a simple circle
+        rl.DrawTextureV(ball_texture, get_ball_position(ball), rl.WHITE)
 
         if DEBUG {
             draw_debug(zoom = camera.zoom)

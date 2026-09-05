@@ -15,6 +15,10 @@ set_ball_position :: proc(ball: ^Ball, pos: rl.Vector2){
     ball.position = pos
 }
 
+get_ball_position :: proc(ball: Ball) -> rl.Vector2{
+    return ball.position
+}
+
 set_ball_direction :: proc(ball: ^Ball, vel: rl.Vector2) {
     ball.velocity = vel
 }
