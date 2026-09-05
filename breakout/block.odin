@@ -36,6 +36,13 @@ block_color_values := [block_color]rl.Color{
     .ORANGE = {170, 120, 250, 255},
 }
 
+block_color_scores := [block_color]int{
+    .YELLOW = 2,
+    .RED = 4,
+    .GREEN = 6,
+    .ORANGE = 8
+}
+
 get_block_rect :: proc(i, j: int) -> rl.Rectangle{
     return {
         f32(20 + i * BLOCK_WIDTH),

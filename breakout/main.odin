@@ -17,6 +17,9 @@ BACKGROUND :: rl.Color{ 150, 190, 220, 255 }
 DEBUG :: true
 
 game_started: bool
+game_over: bool
+score: int = 0
+previous_score: int
 
 show_memory :: proc() {
     track: mem.Tracking_Allocator
@@ -38,7 +41,7 @@ draw_debug :: proc(zoom: f32) {
     rl.DrawFPS(0, 0)
     // rl.DrawLineV(rl.Vector2{0, HEIGTH/(2*zoom)}, {WIDTH, HEIGTH/(2*zoom)}, rl.Color{57, 255, 20, 255})
     // rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.Color{57, 255, 20, 255})
-    rl.DrawLineV(rl.Vector2{0, HEIGTH/(2*zoom)}, {WIDTH, HEIGTH/(2*zoom)}, rl.BLACK)
+    rl.DrawLineV(rl.Vector2{0, HEIGTH/(2 * zoom)}, {WIDTH, HEIGTH/(2 * zoom)}, rl.BLACK)
     rl.DrawLineV(rl.Vector2{WIDTH/(2 * zoom), 0}, {WIDTH/2/zoom, HEIGTH}, rl.BLACK)
 }
 
@@ -47,6 +50,8 @@ restart :: proc(paddle: ^Paddle, ball: ^Ball, blocks: ^Blocks, zoom: f32){
     ball_random_pos := rl.Vector2{rand.float32_range(f32(0), f32(WIDTH/zoom)), rand.float32_range(f32(200/zoom), f32(HEIGTH/2/zoom))} 
     set_ball_position(ball, ball_random_pos)
     game_started = false
+    previous_score = score
+    score = 0
     // initialize all blocks to false at the start of each round
     for i in 0..<NUM_BLOCKS_X{
         for j in 0..<NUM_BLOCKS_Y{
@@ -110,6 +115,7 @@ check_collision_walls_ball :: proc(ball: ^Ball){
 
 check_miss_paddle_ball :: proc(ball: Ball) -> bool{
     if ball.position.y > SCREEN_SIZE + BALL_RADIUS{
+        game_over = true
         return true
     }
     return false
@@ -147,6 +153,8 @@ check_collisions_blocks_ball :: proc(blocks: ^Blocks, ball: ^Ball, previous_ball
                     set_ball_direction(ball=ball, vel=ball_direction)
                 }
                 blocks.status[i][j] = false
+                row_color:= row_colors[j]
+                score += block_color_scores[row_color]
                 break block_x_loop
             }
         }
@@ -242,8 +250,25 @@ main :: proc() {
         if DEBUG {
             draw_debug(zoom = camera.zoom)
         }
+
+        score_text := fmt.ctprint(score) 
+        // this allocates a temporary allocator(memory), as in c-string "t"emporary
+        // needs to be freed at the end of the frame
+        rl.DrawText(score_text, i32(WIDTH / camera.zoom) - 20, 5, 10, rl.WHITE)
+        if game_over && !game_started{
+            game_over_text := fmt.ctprintf("SCORE: %v. RESET: SPACE", previous_score)
+            game_over_text_width := rl.MeasureText(game_over_text, 10)
+            rl.DrawText(
+                game_over_text, 
+                i32(WIDTH/2/camera.zoom) - i32(game_over_text_width/2/i32(camera.zoom)), 
+                i32(HEIGTH/2/camera.zoom), 
+                10, 
+                rl.WHITE
+            )
+        }
         
         rl.EndMode2D()
         rl.EndDrawing()
+        free_all(context.temp_allocator)
     }
 }
