@@ -8,6 +8,7 @@ import "core:mem"
 WIDTH :: 640
 HEIGHT :: 640
 RAD2DEG :: 180.0
+NUM_BLOCKS :: 9
 
 rigid_body :: struct {
     position:  rl.Vector2,
@@ -55,7 +56,7 @@ create_world :: proc() -> b2.WorldId{
     fmt.printf("b2World: %v\n", WorldDef)
 
     // Realistic gravity is achieved by multiplying gravity by the length unit.
-	WorldDef.gravity.y = f32(20) * lengthUnitsPerMeter
+	WorldDef.gravity.y = f32(0.1) * lengthUnitsPerMeter
     fmt.println("gravity: ", WorldDef.gravity)
     worldId:= b2.CreateWorld(WorldDef)
     fmt.println("worldId: ", worldId)
@@ -82,6 +83,13 @@ main :: proc(){
         body_type=.staticBody
     )
 
+    ceiling:= create_rigid_body(
+        size=rl.Vector2{WIDTH, 32.0}, 
+        position=rl.Vector2{WIDTH/2, 32/2}, 
+        worldId=worldId, 
+        body_type=.staticBody
+    )
+
     left_wall:= create_rigid_body(
         size=rl.Vector2{32, HEIGHT}, 
         position=rl.Vector2{32/2, HEIGHT/2}, 
@@ -99,7 +107,7 @@ main :: proc(){
     // circular body
     tmp_body: b2.BodyDef = b2.DefaultBodyDef()
     tmp_body.type = .dynamicBody
-    tmp_body.position = rl.Vector2{WIDTH/2, 50.0}
+    tmp_body.position = rl.Vector2{WIDTH/2, 200.0}
     tmp_body.linearVelocity = rl.Vector2{1000, 1000}
 
     ballBody: b2.BodyId = b2.CreateBody(worldId, tmp_body)
@@ -110,7 +118,7 @@ main :: proc(){
     ball_shape:= b2.DefaultShapeDef()
     ball_shape.enableContactEvents = true // Crucial for callbacks/events
     ball_shape.density = f32(1)
-    ball_shape.material.friction = f32(1.0)
+    ball_shape.material.friction = f32(0.0)
     ball_shape.material.restitution = f32(1.0)
     _ = b2.CreateCircleShape(ballBody, ball_shape, &circle)
 
@@ -128,6 +136,28 @@ main :: proc(){
     paddle_shape.material.restitution = f32(1.0)
     _ = b2.CreatePolygonShape(paddleBody, paddle_shape, &pol)
 
+    Blocks :: struct{
+        extent: [NUM_BLOCKS]rl.Vector2,
+        id: [NUM_BLOCKS]i32
+    }
+    blocks: Blocks
+
+    for i in 0..<NUM_BLOCKS{
+        pos:= rl.Vector2{f32(32.0) + f32(64*i), 100}
+        block_extent:= create_rigid_body(
+            size=rl.Vector2{32, 16.0}, 
+            position=pos, 
+            worldId=worldId, 
+            body_type=.staticBody
+        )
+        blocks.extent[i] = pos
+        blocks.id[i] = i32(i)
+    }
+
+    fmt.printf("number of blocks: %d\n", len(blocks.extent))
+    for i in 0..<NUM_BLOCKS{
+        fmt.printf("block: %d, pos:%v\n", i, blocks.extent[i])
+    }
 
     pause:= true
 
@@ -172,18 +202,15 @@ main :: proc(){
         paddle_top_left := paddle_center - paddle_size * 0.5
 
         rl.DrawRectangleV({0, HEIGHT - floor_extent.y}, floor_extent, rl.DARKBLUE)
+        rl.DrawRectangleV({0, 0}, ceiling, rl.DARKPURPLE)
         rl.DrawRectangleV({0, 0 - floor_extent.y}, left_wall, rl.RED) // coordinate should be the top left corner of the extent
         rl.DrawRectangleV({WIDTH - 32 , 0 - floor_extent.y}, right_wall, rl.RED) // coordinate should be the top left corner of the extent
-        rl.DrawRectangleV(
-        paddle_top_left,
-        paddle_size,
-        rl.RAYWHITE,)
-        
-        rl.DrawCircleV(
-        ball_center,
-        circle.radius,
-        rl.DARKGREEN,
-    )
+        rl.DrawRectangleV(paddle_top_left,paddle_size,rl.RAYWHITE)
+        rl.DrawCircleV(ball_center,circle.radius,rl.DARKGREEN)
+
+        for i in 0..<NUM_BLOCKS{
+            rl.DrawRectangleV(blocks.extent[i],rl.Vector2{32,16}, rl.YELLOW)
+        }
         draw_debug()
         rl.EndDrawing()
     }
