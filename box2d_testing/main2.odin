@@ -75,6 +75,7 @@ main :: proc(){
     defer rl.CloseWindow()
     rl.SetTargetFPS(60)
     worldId := create_world()
+    defer b2.DestroyWorld(worldId)
 
     floor_extent:= create_rigid_body(
         size=rl.Vector2{WIDTH, 32.0}, 
