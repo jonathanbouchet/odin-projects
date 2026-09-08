@@ -88,9 +88,9 @@ main :: proc(){
 
     current_pos: rl.Vector3
     current_rot: rl.Quaternion
-    transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity(), but deprecated
+    transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
 
-    // initial position
+    // get initial position for displaying at the beginning of the scene
     initial_pos := b3.Body_GetPosition(cubeBodyId)
     initial_rot := b3.Body_GetRotation(cubeBodyId)
 
@@ -103,7 +103,7 @@ main :: proc(){
     rl.DisableCursor()
 
     for !rl.WindowShouldClose() {
-        // --- Update & Event Handling ---
+        // update
         if rl.IsKeyPressed(.SPACE){
             is_editing = !is_editing
         }
@@ -177,12 +177,12 @@ main :: proc(){
 
         imgui.End()
 
+        // render
+
         rl.BeginDrawing()
 		rl.ClearBackground(BACKGROUND)
 
         rl.BeginMode3D(camera)
-
-        model.transform = transform_matrix
 
         if !is_running{
             model.transform = initial_transform
