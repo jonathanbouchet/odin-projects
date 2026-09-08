@@ -9,52 +9,52 @@ import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 WIDTH :: 800
 HEIGHT :: 800
-BACKGROUND :: rl.Color{0, 0, 28, 255}
+BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
 
 
-main :: proc(){
+main :: proc() {
     // Initialize raylib
     rl.InitWindow(WIDTH, HEIGHT, "box3d")
     rl.SetTargetFPS(60)
     defer rl.CloseWindow()
 
     // box3d setup
-    worldDef := b3.DefaultWorldDef()
-    worldDef.gravity = rl.Vector3{0.0, -10.0, 0.0} 
+    world_def := b3.DefaultWorldDef()
+    world_def.gravity = rl.Vector3{ 0.0, -10.0, 0.0 } 
 
     // Create the physics world
-    worldId := b3.CreateWorld(worldDef)
-    defer b3.DestroyWorld(worldId)
+    world_id := b3.CreateWorld(world_def)
+    defer b3.DestroyWorld(world_id)
 
     // Define the static ground body
-    groundBodyDef := b3.DefaultBodyDef()
-    groundBodyDef.position = rl.Vector3{0.0, -2.0, 0.0}
-    groundBodyDef.type = .staticBody
-    groundId := b3.CreateBody(worldId, groundBodyDef)
+    ground_body_def := b3.DefaultBodyDef()
+    ground_body_def.position = rl.Vector3{ 0.0, -2.0, 0.0 }
+    ground_body_def.type = .staticBody
+    ground_id := b3.CreateBody(world_id, ground_body_def)
 
     // Add a ground box shape
-    groundBox := b3.MakeBoxHull(20.0, 2.0, 20.0)
-    groundShapeDef := b3.DefaultShapeDef()
-    _ = b3.CreateHullShape(groundId, groundShapeDef, &groundBox.base)
+    ground_box := b3.MakeBoxHull(20.0, 2.0, 20.0)
+    ground_shape_def := b3.DefaultShapeDef()
+    _ = b3.CreateHullShape(ground_id, ground_shape_def, &ground_box.base)
 
     // floor mesh
     floor_mesh := rl.GenMeshCube(20.0, 2.0, 20.0)
     floor_model := rl.LoadModelFromMesh(floor_mesh)
 
     // Create a dynamic Box3d body
-    bodyDef := b3.DefaultBodyDef()
-    bodyDef.type = .dynamicBody
-    bodyDef.position = rl.Vector3{0.0, 20.0, 0.0} // Start 10 units high
-    cubeBodyId := b3.CreateBody(worldId, bodyDef)
+    body_def := b3.DefaultBodyDef()
+    body_def.type = .dynamicBody
+    body_def.position = rl.Vector3{ 0.0, 20.0, 0.0 } // Start 10 units high
+    cube_body_id := b3.CreateBody(world_id, body_def)
 
-    dynamicBox := b3.MakeCubeHull(1.0)
-    shapeDef := b3.DefaultShapeDef()
-    shapeDef.density = 1.0
-    shapeDef.baseMaterial.friction = 0.1
+    dynamic_box := b3.MakeCubeHull(1.0)
+    shape_def := b3.DefaultShapeDef()
+    shape_def.density = 1.0
+    shape_def.baseMaterial.friction = 0.1
     
-    _ = b3.CreateHullShape(cubeBodyId, shapeDef, &dynamicBox.base)
+    _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
 
-    b3_initialPos := b3.Body_GetPosition(cubeBodyId)
+    b3_initialPos := b3.Body_GetPosition(cube_body_id)
 
     // camera
     camera := rl.Camera3D{
@@ -69,7 +69,7 @@ main :: proc(){
     mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
     model := rl.LoadModelFromMesh(mesh)
 
-    cube_initial_pos := b3.Body_GetPosition(cubeBodyId)
+    cube_initial_pos := b3.Body_GetPosition(cube_body_id)
 
     imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
@@ -83,16 +83,16 @@ main :: proc(){
     is_rotating: bool
     is_running: bool
 
-    b3Pos: rl.Vector3
-    b3Rot: rl.Quaternion
+    b3_pos: rl.Vector3
+    b3_rot: rl.Quaternion
 
     current_pos: rl.Vector3
     current_rot: rl.Quaternion
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
 
     // get initial position for displaying at the beginning of the scene
-    initial_pos := b3.Body_GetPosition(cubeBodyId)
-    initial_rot := b3.Body_GetRotation(cubeBodyId)
+    initial_pos := b3.Body_GetPosition(cube_body_id)
+    initial_rot := b3.Body_GetRotation(cube_body_id)
 
     initial_transform := rl.MatrixTranslate(
         f32(initial_pos.x),
@@ -116,19 +116,19 @@ main :: proc(){
         if is_running {
             // simulation by discrete time steps
 			delta_time := rl.GetFrameTime()
-			b3.World_Step(worldId, delta_time, 4)
+			b3.World_Step(world_id, delta_time, 4)
 
             // get the latest position and orientation from Box3D
-            b3Pos = b3.Body_GetPosition(cubeBodyId)
-            b3Rot = b3.Body_GetRotation(cubeBodyId)
+            b3_pos = b3.Body_GetPosition(cube_body_id)
+            b3_rot = b3.Body_GetRotation(cube_body_id)
 
             // convert Box3D types to raylib/raymath types
-            current_pos = {b3Pos.x, b3Pos.y, b3Pos.z}
+            current_pos = { b3_pos.x, b3_pos.y, b3_pos.z }
             tmp_quaternion := quaternion(
-                w = f32(b3Rot.w),
-                x = f32(b3Rot.x),
-                y = f32(b3Rot.y),
-                z = f32(b3Rot.z),
+                w = f32(b3_rot.w),
+                x = f32(b3_rot.x),
+                y = f32(b3_rot.y),
+                z = f32(b3_rot.z),
             )
             current_rot = rl.Quaternion(tmp_quaternion)
 
@@ -163,15 +163,15 @@ main :: proc(){
         imgui.SameLine()
 
         imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##X", &b3Pos.x)
+        imgui.InputFloat("##X", &b3_pos.x)
         imgui.SameLine()
 
         imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##Y", &b3Pos.y)
+        imgui.InputFloat("##Y", &b3_pos.y)
         imgui.SameLine()
 
         imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##Z", &b3Pos.z)
+        imgui.InputFloat("##Z", &b3_pos.z)
 
         imgui.End()
 
@@ -184,15 +184,15 @@ main :: proc(){
 
         if !is_running{
             model.transform = initial_transform
-            rl.DrawModel(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.Color{57, 255, 20, 255},)
-            rl.DrawModelWires(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.RAYWHITE,)
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
         } else{
             model.transform = transform_matrix
-            rl.DrawModel(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.Color{57, 255, 20, 255},)
-            rl.DrawModelWires(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.RAYWHITE,)
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
         }
 
-        rl.DrawModel(floor_model, rl.Vector3{0.0, -2.0, 0.0}, 1.0, rl.DARKGRAY)
+        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.DARKGRAY) // shoudl be half the thickness of the floor
         // rl.DrawGrid(10, 2.0)
         rl.EndMode3D();
 
