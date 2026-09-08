@@ -140,8 +140,6 @@ main :: proc(){
             )
 
             transform_matrix = rotation_matrix * translation_matrix
-
-            fmt.printf("position: %v\n", b3Pos)
 		}
 
         // Let the backend process mouse, keyboard, and window scaling changes
