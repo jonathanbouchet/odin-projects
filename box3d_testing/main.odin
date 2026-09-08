@@ -28,14 +28,18 @@ main :: proc(){
 
     // Define the static ground body
     groundBodyDef := b3.DefaultBodyDef()
+    groundBodyDef.position = rl.Vector3{0.0, -2.0, 0.0}
     groundBodyDef.type = .staticBody
-    position := rl.Vector3{0.0, 0.0, 0.0}
     groundId := b3.CreateBody(worldId, groundBodyDef)
 
     // Add a ground box shape
-    groundBox := b3.MakeBoxHull(50.0, 2.0, 50.0)
+    groundBox := b3.MakeBoxHull(20.0, 2.0, 20.0)
     groundShapeDef := b3.DefaultShapeDef()
     _ = b3.CreateHullShape(groundId, groundShapeDef, &groundBox.base)
+
+    // floor mesh
+    floor_mesh := rl.GenMeshCube(20.0, 2.0, 20.0)
+    floor_model := rl.LoadModelFromMesh(floor_mesh)
 
     // Create a dynamic Box3d body
     bodyDef := b3.DefaultBodyDef()
@@ -54,7 +58,7 @@ main :: proc(){
 
     // camera
     camera := rl.Camera3D{
-        position = rl.Vector3{ 40.0, 10.0, 40.0 }, // Camera position
+        position = rl.Vector3{ 40.0, 0.0, 40.0 }, // Camera position
         target = rl.Vector3{ 0.0, 0.0, 0.0 },      // Camera looking at point
         // target = b3_initialPos,      // Camera looking at point
         up = rl.Vector3{ 0.0, 1.0, 0.0 },          // Camera up vector (rotation towards target)
@@ -76,7 +80,6 @@ main :: proc(){
 
     f: f32
     is_editing: bool
-    rotation: f32
     is_rotating: bool
     is_running: bool
 
@@ -106,13 +109,6 @@ main :: proc(){
         }
         if is_editing{
             rl.UpdateCamera(&camera, .FREE)
-        }
-        if rl.IsKeyPressed(.R){
-            is_rotating = !is_rotating
-        }
-        if is_rotating{
-            dt := rl.GetFrameTime()
-            rotation += 100 * dt
         }
         if rl.IsKeyPressed(.ENTER){
             is_running = !is_running
@@ -157,8 +153,7 @@ main :: proc(){
 
         // --- Define ImGui UI Layout ---
         imgui.Begin("Debug Control Panel")
-        imgui.Text("SPACE: camera")
-        imgui.Text("R: rotate cube")
+        imgui.Text("SPACE: control camera")
         imgui.Text("ENTER: start sim")
 
         fps:= 1.0 / rl.GetFrameTime()
@@ -180,11 +175,6 @@ main :: proc(){
         imgui.SetNextItemWidth(50.0)
         imgui.InputFloat("##Z", &b3Pos.z)
 
-        imgui.Text("Rotation:")
-        imgui.SameLine()
-        imgui.SetNextItemWidth(75.0)
-        imgui.InputFloat("##Y", &rotation)
-
         imgui.End()
 
         rl.BeginDrawing()
@@ -203,8 +193,9 @@ main :: proc(){
             rl.DrawModel(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.Color{57, 255, 20, 255},)
             rl.DrawModelWires(model, rl.Vector3{0.0, 0.0, 0.0}, 1.0, rl.RAYWHITE,)
         }
-       
-        rl.DrawGrid(10, 2.0)
+
+        rl.DrawModel(floor_model, rl.Vector3{0.0, -2.0, 0.0}, 1.0, rl.DARKGRAY)
+        // rl.DrawGrid(10, 2.0)
         rl.EndMode3D();
 
         imgui.Render()
