@@ -11,6 +11,41 @@ WIDTH :: 800
 HEIGHT :: 800
 BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
 
+imgui_display :: proc(position: ^rl.Vector3) {
+    // Let the backend process mouse, keyboard, and window scaling changes
+        rlimgui.process_events()
+        rlimgui.new_frame() 
+        imgui.NewFrame()
+
+        imgui.SetNextWindowCollapsed(true, imgui.Cond.FirstUseEver)
+
+        // --- Define ImGui UI Layout ---
+        imgui.Begin("Debug Control Panel")
+        imgui.Text("SPACE: control camera")
+        imgui.Text("ENTER: start sim")
+
+        fps:= 1.0 / rl.GetFrameTime()
+        fps_text := fmt.tprintf("FPS: %.1f (%.3f ms)", fps, rl.GetFrameTime() * 1000.0)
+        fps_cstring := strings.clone_to_cstring(fps_text, context.temp_allocator)
+        imgui.TextUnformatted(fps_cstring)
+
+        imgui.Text("Position:")
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##X", &position.x)
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##Y", &position.y)
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##Z", &position.z)
+
+        imgui.End()
+}
+
 
 main :: proc() {
     // Initialize raylib
@@ -58,7 +93,7 @@ main :: proc() {
 
     // camera
     camera := rl.Camera3D{
-        position = rl.Vector3{ 40.0, 0.0, 40.0 }, // Camera position
+        position = rl.Vector3{ 40.0, 15.0, 40.0 }, // Camera position
         target = rl.Vector3{ 0.0, 0.0, 0.0 },      // Camera looking at point
         // target = b3_initialPos,      // Camera looking at point
         up = rl.Vector3{ 0.0, 1.0, 0.0 },          // Camera up vector (rotation towards target)
@@ -104,13 +139,13 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        if rl.IsKeyPressed(.SPACE){
+        if rl.IsKeyPressed(.SPACE) {
             is_editing = !is_editing
         }
-        if is_editing{
+        if is_editing {
             rl.UpdateCamera(&camera, .FREE)
         }
-        if rl.IsKeyPressed(.ENTER){
+        if rl.IsKeyPressed(.ENTER) {
             is_running = !is_running
         }
         if is_running {
@@ -142,51 +177,19 @@ main :: proc() {
             transform_matrix = rotation_matrix * translation_matrix
 		}
 
-        // Let the backend process mouse, keyboard, and window scaling changes
-        rlimgui.process_events()
-        rlimgui.new_frame() 
-        imgui.NewFrame()
-
-        imgui.SetNextWindowCollapsed(true, imgui.Cond.FirstUseEver)
-
-        // --- Define ImGui UI Layout ---
-        imgui.Begin("Debug Control Panel")
-        imgui.Text("SPACE: control camera")
-        imgui.Text("ENTER: start sim")
-
-        fps:= 1.0 / rl.GetFrameTime()
-        fps_text := fmt.tprintf("FPS: %.1f (%.3f ms)", fps, rl.GetFrameTime() * 1000.0)
-        fps_cstring := strings.clone_to_cstring(fps_text, context.temp_allocator)
-        imgui.TextUnformatted(fps_cstring)
-
-        imgui.Text("Position:")
-        imgui.SameLine()
-
-        imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##X", &b3_pos.x)
-        imgui.SameLine()
-
-        imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##Y", &b3_pos.y)
-        imgui.SameLine()
-
-        imgui.SetNextItemWidth(50.0)
-        imgui.InputFloat("##Z", &b3_pos.z)
-
-        imgui.End()
-
         // render
+        imgui_display(&b3_pos)
 
         rl.BeginDrawing()
 		rl.ClearBackground(BACKGROUND)
 
         rl.BeginMode3D(camera)
 
-        if !is_running{
+        if !is_running {
             model.transform = initial_transform
             rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
             rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
-        } else{
+        } else {
             model.transform = transform_matrix
             rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
             rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
