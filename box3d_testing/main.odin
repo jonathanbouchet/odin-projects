@@ -1,6 +1,7 @@
 package box3d_testing
 
 import "core:fmt"
+import "core:math"
 import rl "vendor:raylib"
 import "core:strings"
 import b3 "vendor:box3d"
@@ -9,7 +10,8 @@ import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 WIDTH :: 800
 HEIGHT :: 800
-BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
+// BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
+BACKGROUND :: rl.Color{110, 184, 168, 255}
 
 imgui_display :: proc(position: ^rl.Vector3) {
     // Let the backend process mouse, keyboard, and window scaling changes
@@ -80,6 +82,28 @@ main :: proc() {
     body_def := b3.DefaultBodyDef()
     body_def.type = .dynamicBody
     body_def.position = rl.Vector3{ 0.0, 20.0, 0.0 } // Start 10 units high
+    // angle := f32(math.to_radians_f32(20.0))
+    // half_angle := angle * 0.5
+
+    // initial_rotation := quaternion(
+    //     w = math.cos(half_angle),
+    //     x = 0.0,
+    //     y = math.sin(half_angle),
+    //     z = 0.0,
+    // )
+    // body_def.rotation = initial_rotation
+    axis := rl.Vector3{0.0, 1.0, 0.0}
+    angle := f32(math.to_radians_f32(45.0))
+    half_angle := angle * 0.5
+
+    s := math.sin(half_angle)
+
+    body_def.rotation = quaternion(
+        w = math.cos(half_angle),
+        x = axis.x * s,
+        y = axis.y * s,
+        z = axis.z * s,
+    )
     cube_body_id := b3.CreateBody(world_id, body_def)
 
     dynamic_box := b3.MakeCubeHull(1.0)
@@ -88,8 +112,6 @@ main :: proc() {
     shape_def.baseMaterial.friction = 0.1
     
     _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
-
-    b3_initialPos := b3.Body_GetPosition(cube_body_id)
 
     // camera
     camera := rl.Camera3D{
@@ -104,8 +126,6 @@ main :: proc() {
     mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
     model := rl.LoadModelFromMesh(mesh)
 
-    cube_initial_pos := b3.Body_GetPosition(cube_body_id)
-
     imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
 
@@ -113,9 +133,7 @@ main :: proc() {
     rlimgui.init()
     defer rlimgui.shutdown()
 
-    f: f32
     is_editing: bool
-    is_rotating: bool
     is_running: bool
 
     b3_pos: rl.Vector3
@@ -128,12 +146,6 @@ main :: proc() {
     // get initial position for displaying at the beginning of the scene
     initial_pos := b3.Body_GetPosition(cube_body_id)
     initial_rot := b3.Body_GetRotation(cube_body_id)
-
-    initial_transform := rl.MatrixTranslate(
-        f32(initial_pos.x),
-        f32(initial_pos.y),
-        f32(initial_pos.z),
-    )
 
     rl.DisableCursor()
 
@@ -175,10 +187,12 @@ main :: proc() {
             )
 
             transform_matrix = rotation_matrix * translation_matrix
-		}
+		} else {
+            current_pos = initial_pos
+        }
 
         // render
-        imgui_display(&b3_pos)
+        imgui_display(&current_pos)
 
         rl.BeginDrawing()
 		rl.ClearBackground(BACKGROUND)
@@ -186,17 +200,16 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         if !is_running {
-            model.transform = initial_transform
-            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
+            rl.DrawModel(model, initial_pos, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, initial_pos, 1.0, rl.BLACK,)
         } else {
             model.transform = transform_matrix
             rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
         }
 
-        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.DARKGRAY) // shoudl be half the thickness of the floor
-        // rl.DrawGrid(10, 2.0)
+        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{20, 20, 20, 100}) // should be half the thickness of the floor
+        rl.DrawGrid(10, 2.0)
         rl.EndMode3D();
 
         imgui.Render()
