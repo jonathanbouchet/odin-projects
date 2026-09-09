@@ -1,0 +1,277 @@
+package box3d_testing
+
+import "core:fmt"
+import "core:math"
+import la "core:math/linalg"
+import rl "vendor:raylib"
+import "core:strings"
+import b3 "vendor:box3d"
+import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
+import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
+
+WIDTH :: 800
+HEIGHT :: 800
+// BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
+BACKGROUND :: rl.Color{110, 184, 168, 255}
+
+imgui_display :: proc(position: ^rl.Vector3) {
+    // Let the backend process mouse, keyboard, and window scaling changes
+        rlimgui.process_events()
+        rlimgui.new_frame() 
+        imgui.NewFrame()
+
+        imgui.SetNextWindowCollapsed(true, imgui.Cond.FirstUseEver)
+
+        // --- Define ImGui UI Layout ---
+        imgui.Begin("Debug Control Panel")
+        imgui.Text("SPACE: control camera")
+        imgui.Text("ENTER: start sim")
+
+        fps:= 1.0 / rl.GetFrameTime()
+        fps_text := fmt.tprintf("FPS: %.1f (%.3f ms)", fps, rl.GetFrameTime() * 1000.0)
+        fps_cstring := strings.clone_to_cstring(fps_text, context.temp_allocator)
+        imgui.TextUnformatted(fps_cstring)
+
+        imgui.Text("Position:")
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##X", &position.x)
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##Y", &position.y)
+        imgui.SameLine()
+
+        imgui.SetNextItemWidth(50.0)
+        imgui.InputFloat("##Z", &position.z)
+
+        imgui.End()
+}
+
+get_body_transform :: proc(id: b3.BodyId) -> rl.Matrix {
+    pos := b3.Body_GetPosition(id)
+    rot := b3.Body_GetRotation(id)
+    // convert Box3D types to raylib/raymath types
+
+    pos_rl := rl.Vector3{ pos.x, pos.y, pos.z }
+    quaternion_rl := quaternion(
+        w = f32(rot.w),
+        x = f32(rot.x),
+        y = f32(rot.y),
+        z = f32(rot.z),
+    )
+    rot_rl := rl.Quaternion(quaternion_rl)
+
+    rotation_matrix := rl.QuaternionToMatrix(rot_rl)
+    translation_matrix := rl.MatrixTranslate(
+        pos_rl.x,
+        pos_rl.y,
+        pos_rl.z,
+    )
+    // transform_matrix := rl.Matrix(1)
+    transform_matrix := rotation_matrix * translation_matrix
+    // fmt.printfln("transform matrix raw: %v", transform_matrix)
+    return transform_matrix
+}
+
+
+main :: proc() {
+    // Initialize raylib
+    rl.InitWindow(WIDTH, HEIGHT, "box3d")
+    rl.SetTargetFPS(60)
+    defer rl.CloseWindow()
+
+    // box3d setup
+    world_def := b3.DefaultWorldDef()
+    world_def.gravity = rl.Vector3{ 0.0, -10.0, 0.0 } 
+
+    // Create the physics world
+    world_id := b3.CreateWorld(world_def)
+    defer b3.DestroyWorld(world_id)
+
+    // Define the static ground body
+    ground_body_def := b3.DefaultBodyDef()
+    ground_body_def.position = rl.Vector3{ 0.0, -2.0, 0.0 }
+    ground_body_def.type = .staticBody
+    ground_id := b3.CreateBody(world_id, ground_body_def)
+
+    // Add a ground box shape
+    ground_box := b3.MakeBoxHull(20.0, 2.0, 20.0)
+    ground_shape_def := b3.DefaultShapeDef()
+    _ = b3.CreateHullShape(ground_id, ground_shape_def, &ground_box.base)
+
+    // floor mesh
+    floor_mesh := rl.GenMeshCube(20.0, 2.0, 20.0)
+    floor_model := rl.LoadModelFromMesh(floor_mesh)
+
+    // Create a dynamic Box3d body
+    body_def := b3.DefaultBodyDef()
+    body_def.type = .dynamicBody
+    body_def.position = rl.Vector3{ 1.0, 20.0, -1.0 } // Start 10 units high
+    // angle := f32(math.to_radians_f32(20.0))
+    // half_angle := angle * 0.5
+
+    // initial_rotation := quaternion(
+    //     w = math.cos(half_angle),
+    //     x = 0.0,
+    //     y = math.sin(half_angle),
+    //     z = 0.0,
+    // )
+    // body_def.rotation = initial_rotation
+    // axis := rl.Vector3{0.0, 1.0, 0.0}
+    // angle := f32(math.to_radians_f32(45.0))
+    // half_angle := angle * 0.5
+
+    // s := math.sin(half_angle)
+
+    // body_def.rotation = quaternion(
+    //     w = math.cos(half_angle),
+    //     x = axis.x * s,
+    //     y = axis.y * s,
+    //     z = axis.z * s,
+    // )
+    cube_body_id := b3.CreateBody(world_id, body_def)
+
+    dynamic_box := b3.MakeCubeHull(1.0)
+    shape_def := b3.DefaultShapeDef()
+    shape_def.density = 1.0
+    shape_def.baseMaterial.friction = 0.1
+    
+    _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
+
+    // camera
+    camera := rl.Camera3D{
+        position = rl.Vector3{ 40.0, 15.0, 40.0 }, // Camera position
+        target = rl.Vector3{ 0.0, 0.0, 0.0 },      // Camera looking at point
+        // target = b3_initialPos,      // Camera looking at point
+        up = rl.Vector3{ 0.0, 1.0, 0.0 },          // Camera up vector (rotation towards target)
+        fovy = f32(45.0),                                // Camera field-of-view Y
+        projection = .PERSPECTIVE,
+    }
+
+    mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
+    model := rl.LoadModelFromMesh(mesh)
+
+    imgui.CreateContext(nil)
+	defer imgui.DestroyContext(nil)
+
+    // Initialize ImGui Backend
+    rlimgui.init()
+    defer rlimgui.shutdown()
+
+    is_editing: bool
+    is_running: bool
+
+    b3_pos: rl.Vector3
+    b3_rot: rl.Quaternion
+
+    current_pos: rl.Vector3
+    current_rot: rl.Quaternion
+    transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
+
+    // // get initial position for displaying at the beginning of the scene
+    // initial_pos := b3.Body_GetPosition(cube_body_id)
+    // initial_rot := b3.Body_GetRotation(cube_body_id)
+
+    // init_pos := rl.Vector3{ initial_pos.x, initial_pos.y, initial_pos.z }
+    // init_quaternion := quaternion(
+    //     w = f32(initial_rot.w),
+    //     x = f32(initial_rot.x),
+    //     y = f32(initial_rot.y),
+    //     z = f32(initial_rot.z),
+    // )
+    // init_rot := rl.Quaternion(init_quaternion)
+
+    // init_rotation_matrix := rl.QuaternionToMatrix(init_rot)
+    // init_translation_matrix := rl.MatrixTranslate(
+    //     init_pos.x,
+    //     init_pos.y,
+    //     init_pos.z,
+    // )
+    // init_transform_matrix := init_rotation_matrix * init_translation_matrix
+    init_transform_matrix := get_body_transform(cube_body_id)
+
+    fmt.printfln("init_transform_matrix: %v", init_transform_matrix)
+    fmt.printfln("from id: %v", get_body_transform(cube_body_id))
+
+
+    rl.DisableCursor()
+
+    for !rl.WindowShouldClose() {
+        // update
+        if rl.IsKeyPressed(.SPACE) {
+            is_editing = !is_editing
+        }
+        if is_editing {
+            rl.UpdateCamera(&camera, .FREE)
+        }
+        if rl.IsKeyPressed(.ENTER) {
+            is_running = !is_running
+        }
+        if is_running {
+            // simulation by discrete time steps
+			delta_time := rl.GetFrameTime()
+			b3.World_Step(world_id, delta_time, 4)
+
+            // get the latest position and orientation from Box3D
+            // b3_pos = b3.Body_GetPosition(cube_body_id)
+            // b3_rot = b3.Body_GetRotation(cube_body_id)
+
+            // // convert Box3D types to raylib/raymath types
+            // current_pos = { b3_pos.x, b3_pos.y, b3_pos.z }
+            // tmp_quaternion := quaternion(
+            //     w = f32(b3_rot.w),
+            //     x = f32(b3_rot.x),
+            //     y = f32(b3_rot.y),
+            //     z = f32(b3_rot.z),
+            // )
+            // current_rot = rl.Quaternion(tmp_quaternion)
+
+            // rotation_matrix := rl.QuaternionToMatrix(current_rot)
+            // translation_matrix := rl.MatrixTranslate(
+            //     current_pos.x,
+            //     current_pos.y,
+            //     current_pos.z,
+            // )
+            // transform_matrix = rotation_matrix * translation_matrix
+            transform_matrix = get_body_transform(cube_body_id)
+		} //else {
+            // current_pos = b3.Body_GetPosition((cube_body_id))
+            // current_rot = b3.Body_GetRotation((cube_body_id))
+            // transform_matrix = init_transform_matrix
+        // }
+
+        // render
+        current_pos = b3.Body_GetPosition(cube_body_id)
+        imgui_display(&current_pos)
+
+        rl.BeginDrawing()
+		rl.ClearBackground(BACKGROUND)
+
+        rl.BeginMode3D(camera)
+
+        if !is_running {
+            // rl.DrawModel(model, initial_pos, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            // rl.DrawModelWires(model, initial_pos, 1.0, rl.BLACK,)
+            // model.transform = transform_matrix//init_transform_matrix
+            model.transform = get_body_transform(cube_body_id)
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
+        } else {
+            // model.transform = transform_matrix
+            model.transform = get_body_transform(cube_body_id)
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
+        }
+
+        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{20, 20, 20, 100}) // should be half the thickness of the floor
+        rl.DrawGrid(10, 2.0)
+        rl.EndMode3D();
+
+        imgui.Render()
+		rlimgui.render_draw_data(imgui.GetDrawData())
+
+        rl.EndDrawing()
+    }
+}
