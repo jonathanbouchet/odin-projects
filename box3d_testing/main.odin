@@ -49,7 +49,7 @@ imgui_display :: proc(position: ^rl.Vector3) {
         imgui.End()
 }
 
-get_body_transform :: proc(id: b3.BodyId) -> matrix[4,4]f32 {
+get_body_transform :: proc(id: b3.BodyId) -> rl.Matrix {
     pos := b3.Body_GetPosition(id)
     rot := b3.Body_GetRotation(id)
     // convert Box3D types to raylib/raymath types
@@ -69,10 +69,8 @@ get_body_transform :: proc(id: b3.BodyId) -> matrix[4,4]f32 {
         pos_rl.y,
         pos_rl.z,
     )
-    transform_matrix := rl.Matrix(1)
-    transform_matrix = rotation_matrix * translation_matrix
-    return transmute(matrix[4, 4]f32)la.transpose(transform_matrix)
-    // return transform_matrix
+    transform_matrix := rotation_matrix * translation_matrix
+    return transform_matrix
 }
 
 
@@ -108,29 +106,7 @@ main :: proc() {
     // Create a dynamic Box3d body
     body_def := b3.DefaultBodyDef()
     body_def.type = .dynamicBody
-    body_def.position = rl.Vector3{ 0.0, 20.0, 0.0 } // Start 10 units high
-    // angle := f32(math.to_radians_f32(20.0))
-    // half_angle := angle * 0.5
-
-    // initial_rotation := quaternion(
-    //     w = math.cos(half_angle),
-    //     x = 0.0,
-    //     y = math.sin(half_angle),
-    //     z = 0.0,
-    // )
-    // body_def.rotation = initial_rotation
-    axis := rl.Vector3{0.0, 1.0, 0.0}
-    angle := f32(math.to_radians_f32(45.0))
-    half_angle := angle * 0.5
-
-    s := math.sin(half_angle)
-
-    body_def.rotation = quaternion(
-        w = math.cos(half_angle),
-        x = axis.x * s,
-        y = axis.y * s,
-        z = axis.z * s,
-    )
+    body_def.position = rl.Vector3{ 1.0, 20.0, -1.0 } // Start 10 units high
     cube_body_id := b3.CreateBody(world_id, body_def)
 
     dynamic_box := b3.MakeCubeHull(1.0)
@@ -170,26 +146,8 @@ main :: proc() {
     current_rot: rl.Quaternion
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
 
-    // get initial position for displaying at the beginning of the scene
-    initial_pos := b3.Body_GetPosition(cube_body_id)
-    initial_rot := b3.Body_GetRotation(cube_body_id)
-
-    init_pos := rl.Vector3{ initial_pos.x, initial_pos.y, initial_pos.z }
-    init_quaternion := quaternion(
-        w = f32(initial_rot.w),
-        x = f32(initial_rot.x),
-        y = f32(initial_rot.y),
-        z = f32(initial_rot.z),
-    )
-    init_rot := rl.Quaternion(init_quaternion)
-
-    init_rotation_matrix := rl.QuaternionToMatrix(init_rot)
-    init_translation_matrix := rl.MatrixTranslate(
-        init_pos.x,
-        init_pos.y,
-        init_pos.z,
-    )
-    init_transform_matrix := init_rotation_matrix * init_translation_matrix
+    // // get initial position for displaying at the beginning of the scene
+    init_transform_matrix := get_body_transform(cube_body_id)
 
     fmt.printfln("init_transform_matrix: %v", init_transform_matrix)
     fmt.printfln("from id: %v", get_body_transform(cube_body_id))
@@ -212,35 +170,11 @@ main :: proc() {
             // simulation by discrete time steps
 			delta_time := rl.GetFrameTime()
 			b3.World_Step(world_id, delta_time, 4)
-
-            // get the latest position and orientation from Box3D
-            b3_pos = b3.Body_GetPosition(cube_body_id)
-            b3_rot = b3.Body_GetRotation(cube_body_id)
-
-            // convert Box3D types to raylib/raymath types
-            current_pos = { b3_pos.x, b3_pos.y, b3_pos.z }
-            tmp_quaternion := quaternion(
-                w = f32(b3_rot.w),
-                x = f32(b3_rot.x),
-                y = f32(b3_rot.y),
-                z = f32(b3_rot.z),
-            )
-            current_rot = rl.Quaternion(tmp_quaternion)
-
-            rotation_matrix := rl.QuaternionToMatrix(current_rot)
-            translation_matrix := rl.MatrixTranslate(
-                current_pos.x,
-                current_pos.y,
-                current_pos.z,
-            )
-            transform_matrix = rotation_matrix * translation_matrix
-		} else {
-            // current_pos = b3.Body_GetPosition((cube_body_id))
-            // current_rot = b3.Body_GetRotation((cube_body_id))
-            transform_matrix = init_transform_matrix
-        }
+            transform_matrix = get_body_transform(cube_body_id)
+		} 
 
         // render
+        current_pos = b3.Body_GetPosition(cube_body_id)
         imgui_display(&current_pos)
 
         rl.BeginDrawing()
@@ -248,17 +182,9 @@ main :: proc() {
 
         rl.BeginMode3D(camera)
 
-        if !is_running {
-            // rl.DrawModel(model, initial_pos, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            // rl.DrawModelWires(model, initial_pos, 1.0, rl.BLACK,)
-            model.transform = transform_matrix//init_transform_matrix
-            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
-        } else {
-            model.transform = transform_matrix
-            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
-        }
+        model.transform = get_body_transform(cube_body_id)
+        rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+        rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
 
         rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{20, 20, 20, 100}) // should be half the thickness of the floor
         rl.DrawGrid(10, 2.0)
