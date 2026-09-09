@@ -2,6 +2,7 @@ package box3d_testing
 
 import "core:fmt"
 import "core:math"
+import la "core:math/linalg"
 import rl "vendor:raylib"
 import "core:strings"
 import b3 "vendor:box3d"
@@ -46,6 +47,32 @@ imgui_display :: proc(position: ^rl.Vector3) {
         imgui.InputFloat("##Z", &position.z)
 
         imgui.End()
+}
+
+get_body_transform :: proc(id: b3.BodyId) -> matrix[4,4]f32 {
+    pos := b3.Body_GetPosition(id)
+    rot := b3.Body_GetRotation(id)
+    // convert Box3D types to raylib/raymath types
+
+    pos_rl := rl.Vector3{ pos.x, pos.y, pos.z }
+    quaternion_rl := quaternion(
+        w = f32(rot.w),
+        x = f32(rot.x),
+        y = f32(rot.y),
+        z = f32(rot.z),
+    )
+    rot_rl := rl.Quaternion(quaternion_rl)
+
+    rotation_matrix := rl.QuaternionToMatrix(rot_rl)
+    translation_matrix := rl.MatrixTranslate(
+        pos_rl.x,
+        pos_rl.y,
+        pos_rl.z,
+    )
+    transform_matrix := rl.Matrix(1)
+    transform_matrix = rotation_matrix * translation_matrix
+    return transmute(matrix[4, 4]f32)la.transpose(transform_matrix)
+    // return transform_matrix
 }
 
 
@@ -147,6 +174,27 @@ main :: proc() {
     initial_pos := b3.Body_GetPosition(cube_body_id)
     initial_rot := b3.Body_GetRotation(cube_body_id)
 
+    init_pos := rl.Vector3{ initial_pos.x, initial_pos.y, initial_pos.z }
+    init_quaternion := quaternion(
+        w = f32(initial_rot.w),
+        x = f32(initial_rot.x),
+        y = f32(initial_rot.y),
+        z = f32(initial_rot.z),
+    )
+    init_rot := rl.Quaternion(init_quaternion)
+
+    init_rotation_matrix := rl.QuaternionToMatrix(init_rot)
+    init_translation_matrix := rl.MatrixTranslate(
+        init_pos.x,
+        init_pos.y,
+        init_pos.z,
+    )
+    init_transform_matrix := init_rotation_matrix * init_translation_matrix
+
+    fmt.printfln("init_transform_matrix: %v", init_transform_matrix)
+    fmt.printfln("from id: %v", get_body_transform(cube_body_id))
+
+
     rl.DisableCursor()
 
     for !rl.WindowShouldClose() {
@@ -185,10 +233,11 @@ main :: proc() {
                 current_pos.y,
                 current_pos.z,
             )
-
             transform_matrix = rotation_matrix * translation_matrix
 		} else {
-            current_pos = initial_pos
+            // current_pos = b3.Body_GetPosition((cube_body_id))
+            // current_rot = b3.Body_GetRotation((cube_body_id))
+            transform_matrix = init_transform_matrix
         }
 
         // render
@@ -200,8 +249,11 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         if !is_running {
-            rl.DrawModel(model, initial_pos, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, initial_pos, 1.0, rl.BLACK,)
+            // rl.DrawModel(model, initial_pos, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            // rl.DrawModelWires(model, initial_pos, 1.0, rl.BLACK,)
+            model.transform = transform_matrix//init_transform_matrix
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
         } else {
             model.transform = transform_matrix
             rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
