@@ -7,8 +7,8 @@ import b3 "vendor:box3d"
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
-WIDTH :: 600
-HEIGHT :: 600
+WIDTH :: 700
+HEIGHT :: 700
 BACKGROUND :: rl.Color{110, 184, 168, 255}
 
 imgui_display :: proc(position: ^rl.Vector3, sphere_position: ^rl.Vector3, gravity: ^rl.Vector3) {
@@ -117,6 +117,7 @@ create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
     shape_def.baseMaterial.restitution = 0.1
     
     _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
+    fmt.printfln("bodyId: %v", cube_body_id)
     return cube_body_id
 } 
 
@@ -128,7 +129,7 @@ main :: proc() {
 
     // box3d setup
     world_def := b3.DefaultWorldDef()
-    world_def.gravity = rl.Vector3{ 0.0, -10.0, 0.0 } 
+    world_def.gravity = rl.Vector3{ 0.0, -20.0, 0.0 } 
 
     // Create the physics world
     world_id := b3.CreateWorld(world_def)
@@ -160,7 +161,7 @@ main :: proc() {
     entity_6_id := create_box(position=rl.Vector3{-6.0, 8.0, -3.0}, world_id=world_id)
 
     mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
-    model := rl.LoadModelFromMesh(mesh)
+    // model := rl.LoadModelFromMesh(mesh)
 
     boxes_pos: [6]rl.Vector3
     boxes_id := [6]b3.BodyId{
@@ -171,23 +172,31 @@ main :: proc() {
         entity_5_id,
         entity_6_id,
     }
+    boxes_model := [6]rl.Model{
+        rl.LoadModelFromMesh(mesh),
+        rl.LoadModelFromMesh(mesh),
+        rl.LoadModelFromMesh(mesh),
+        rl.LoadModelFromMesh(mesh),
+        rl.LoadModelFromMesh(mesh),
+        rl.LoadModelFromMesh(mesh),
+    }
 
     // Create a dynamic Box3d sphere
-    sphere_radius := f32(1.0)
+    sphere_radius := f32(1.5)
     sphere := b3.Sphere{ radius = sphere_radius }
 
     sphere_shape_def := b3.DefaultShapeDef()
     sphere_shape_def.density = 1.0
-    sphere_shape_def.baseMaterial.friction = 0.25
-    sphere_shape_def.baseMaterial.restitution = 0.75
+    sphere_shape_def.baseMaterial.friction = 0.1
+    sphere_shape_def.baseMaterial.restitution = 1.0
 
     sphere_body_def := b3.DefaultBodyDef()
     sphere_body_def.type = .dynamicBody
     sphere_body_def.position = rl.Vector3{ 5.0, 5.0, -3.0 }
-    sphere_body_def.linearVelocity = rl.Vector3 {-30, 0, 0}
+    // sphere_body_def.linearVelocity = rl.Vector3 {-30, 0, 0}
 
     sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
-    _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
+    // _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
 
     sphere_mesh := rl.GenMeshSphere(sphere_radius, 10, 20)
     sphere_model := rl.LoadModelFromMesh(sphere_mesh)
@@ -212,6 +221,7 @@ main :: proc() {
     is_editing: bool
     is_running: bool
     is_shoot: bool
+    sphere_is_spawned: bool
     current_pos: rl.Vector3
     sphere_pos : rl.Vector3
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
@@ -232,6 +242,13 @@ main :: proc() {
         }
         if is_running {
             // simulation by discrete time steps
+            if !sphere_is_spawned {
+                fmt.printfln("is_spawned: %v", sphere_is_spawned)
+                _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
+                b3.Body_ApplyLinearImpulseToCenter(sphere_body_id, rl.Vector3{ 0, -60, 0 }, true)
+                // TO DO: make the full sphere declaration here
+                sphere_is_spawned = true
+            }
 			delta_time := rl.GetFrameTime()
 			b3.World_Step(world_id, delta_time, 4)
 		} 
@@ -261,9 +278,10 @@ main :: proc() {
 
         // cube
         for i in 0..<len(boxes_pos) {
-            model.transform = get_body_transform(boxes_id[i])
-            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
+            current_model := boxes_model[i]
+            current_model.transform = get_body_transform(boxes_id[i])
+            rl.DrawModel(current_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(current_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
         }
         // sphere
         sphere_model.transform = get_body_transform(sphere_body_id)
