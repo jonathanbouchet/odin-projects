@@ -1,8 +1,6 @@
 package box3d_testing
 
 import "core:fmt"
-import "core:math"
-import la "core:math/linalg"
 import rl "vendor:raylib"
 import "core:strings"
 import b3 "vendor:box3d"
@@ -11,7 +9,6 @@ import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 WIDTH :: 800
 HEIGHT :: 800
-// BACKGROUND :: rl.Color{ 0, 0, 28, 255 }
 BACKGROUND :: rl.Color{110, 184, 168, 255}
 
 imgui_display :: proc(position: ^rl.Vector3, sphere_position: ^rl.Vector3, gravity: ^rl.Vector3) {
@@ -45,10 +42,6 @@ imgui_display :: proc(position: ^rl.Vector3, sphere_position: ^rl.Vector3, gravi
 
         imgui.SetNextItemWidth(50.0)
         imgui.InputFloat("##z", &gravity.z)
-
-        // gravity_text := fmt.tprintf("gravity: %.3f", gravity)
-        // gravity_cstring := strings.clone_to_cstring(gravity_text, context.temp_allocator)
-        // imgui.TextUnformatted(gravity_cstring)
 
         imgui.Text("Cube Position:")
         imgui.SameLine()
@@ -105,6 +98,29 @@ get_body_transform :: proc(id: b3.BodyId) -> rl.Matrix {
     return transform_matrix
 }
 
+entity :: struct {
+    id: b3.BodyId,
+    model: rl.Model
+
+}
+
+create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
+    // Create a dynamic Box3d body
+    body_def := b3.DefaultBodyDef()
+    body_def.type = .dynamicBody
+    body_def.position = position
+    cube_body_id := b3.CreateBody(world_id, body_def)
+
+    dynamic_box := b3.MakeCubeHull(1.0)
+    shape_def := b3.DefaultShapeDef()
+    shape_def.density = 1.0
+    shape_def.baseMaterial.friction = 0.2
+    shape_def.baseMaterial.restitution = 0.2
+    
+    _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
+    return cube_body_id
+} 
+
 main :: proc() {
     // Initialize raylib
     rl.InitWindow(WIDTH, HEIGHT, "box3d")
@@ -134,22 +150,19 @@ main :: proc() {
     floor_mesh := rl.GenMeshCube(20.0, 2.0, 20.0)
     floor_model := rl.LoadModelFromMesh(floor_mesh)
 
-    // Create a dynamic Box3d body
-    body_def := b3.DefaultBodyDef()
-    body_def.type = .dynamicBody
-    body_def.position = rl.Vector3{ -5.0, 20.0, -1.0 } // Start 10 units high
-    cube_body_id := b3.CreateBody(world_id, body_def)
-
-    dynamic_box := b3.MakeCubeHull(1.0)
-    shape_def := b3.DefaultShapeDef()
-    shape_def.density = 1.0
-    shape_def.baseMaterial.friction = 0.2
-    shape_def.baseMaterial.restitution = 0.2
-    
-    _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
-
+    // create dynamic boxes
+    entity_1_id := create_box(position=rl.Vector3{-6.0, 10.0, -6.0}, world_id=world_id)
+    entity_2_id := create_box(position=rl.Vector3{-6.0, 10.0, -3.0}, world_id=world_id)
+    entity_3_id := create_box(position=rl.Vector3{-6.0, 10.0, 1.0}, world_id=world_id)
     mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
     model := rl.LoadModelFromMesh(mesh)
+
+    boxes_pos: [3]rl.Vector3
+    boxes_id := [3]b3.BodyId{
+        entity_1_id,
+        entity_2_id,
+        entity_3_id,
+    }
 
     // Create a dynamic Box3d sphere
     sphere_radius := f32(1.0)
@@ -167,7 +180,7 @@ main :: proc() {
     sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
     _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
 
-    sphere_mesh := rl.GenMeshSphere(sphere_radius, 32, 16)
+    sphere_mesh := rl.GenMeshSphere(sphere_radius, 10, 20)
     sphere_model := rl.LoadModelFromMesh(sphere_mesh)
 
     // camera
@@ -189,24 +202,11 @@ main :: proc() {
 
     is_editing: bool
     is_running: bool
-
-    b3_pos: rl.Vector3
-    b3_rot: rl.Quaternion
-
     current_pos: rl.Vector3
-    current_rot: rl.Quaternion
+    sphere_pos : rl.Vector3
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
     transform_matrix_sphere := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
-    sphere_pos : rl.Vector3
-
-    // // get initial position for displaying at the beginning of the scene
-    init_transform_matrix := get_body_transform(cube_body_id)
-    init_transform_matrix_sphere := get_body_transform(sphere_body_id)
-
-    fmt.printfln("init_transform_matrix: %v", init_transform_matrix)
-    fmt.printfln("from id: %v", get_body_transform(cube_body_id))
-
-
+  
     rl.DisableCursor()
 
     for !rl.WindowShouldClose() {
@@ -224,12 +224,12 @@ main :: proc() {
             // simulation by discrete time steps
 			delta_time := rl.GetFrameTime()
 			b3.World_Step(world_id, delta_time, 4)
-            transform_matrix = get_body_transform(cube_body_id)
-            transform_matrix_sphere = get_body_transform((sphere_body_id))
 		} 
 
         // render
-        current_pos = b3.Body_GetPosition(cube_body_id)
+        for i in 0..<3 {
+            boxes_pos[i] = b3.Body_GetPosition(boxes_id[i])
+        }
         sphere_pos = b3.Body_GetPosition(sphere_body_id)
         imgui_display(&current_pos, &sphere_pos, &world_def.gravity)
 
@@ -239,16 +239,18 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         // cube
-        model.transform = get_body_transform(cube_body_id)
-        rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
-        rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
-
+        for i in 0..<3 {
+            model.transform = get_body_transform(boxes_id[i])
+            rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
+            rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
+        }
         // sphere
         sphere_model.transform = get_body_transform(sphere_body_id)
         rl.DrawModel(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 255, 240, 30, 255 },)
+        // rl.DrawModelWires(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
 
         // floor
-        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{20, 20, 20, 100}) // should be half the thickness of the floor
+        rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{0, 0, 28, 255}) // should be half the thickness of the floor
         rl.DrawGrid(10, 2.0)
         rl.EndMode3D();
 
