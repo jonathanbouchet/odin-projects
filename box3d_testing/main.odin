@@ -7,8 +7,8 @@ import b3 "vendor:box3d"
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
-WIDTH :: 800
-HEIGHT :: 800
+WIDTH :: 600
+HEIGHT :: 600
 BACKGROUND :: rl.Color{110, 184, 168, 255}
 
 imgui_display :: proc(position: ^rl.Vector3, sphere_position: ^rl.Vector3, gravity: ^rl.Vector3) {
@@ -101,7 +101,6 @@ get_body_transform :: proc(id: b3.BodyId) -> rl.Matrix {
 entity :: struct {
     id: b3.BodyId,
     model: rl.Model
-
 }
 
 create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
@@ -115,7 +114,7 @@ create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
     shape_def := b3.DefaultShapeDef()
     shape_def.density = 1.0
     shape_def.baseMaterial.friction = 0.2
-    shape_def.baseMaterial.restitution = 0.2
+    shape_def.baseMaterial.restitution = 0.1
     
     _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
     return cube_body_id
@@ -129,7 +128,7 @@ main :: proc() {
 
     // box3d setup
     world_def := b3.DefaultWorldDef()
-    world_def.gravity = rl.Vector3{ 0.0, -20.0, 0.0 } 
+    world_def.gravity = rl.Vector3{ 0.0, -10.0, 0.0 } 
 
     // Create the physics world
     world_id := b3.CreateWorld(world_def)
@@ -151,17 +150,26 @@ main :: proc() {
     floor_model := rl.LoadModelFromMesh(floor_mesh)
 
     // create dynamic boxes
-    entity_1_id := create_box(position=rl.Vector3{-6.0, 10.0, -6.0}, world_id=world_id)
-    entity_2_id := create_box(position=rl.Vector3{-6.0, 10.0, -3.0}, world_id=world_id)
-    entity_3_id := create_box(position=rl.Vector3{-6.0, 10.0, 1.0}, world_id=world_id)
+    entity_1_id := create_box(position=rl.Vector3{-6.0, 2.0, -6.0}, world_id=world_id)
+    entity_2_id := create_box(position=rl.Vector3{-6.0, 2.0, -3.0}, world_id=world_id)
+    entity_3_id := create_box(position=rl.Vector3{-6.0, 2.0, 0.0}, world_id=world_id)
+
+    entity_4_id := create_box(position=rl.Vector3{-6.0, 5.0, -4.5}, world_id=world_id)
+    entity_5_id := create_box(position=rl.Vector3{-6.0, 5.0, -1.5}, world_id=world_id)
+
+    entity_6_id := create_box(position=rl.Vector3{-6.0, 8.0, -3.0}, world_id=world_id)
+
     mesh := rl.GenMeshCube(2.0, 2.0, 2.0)
     model := rl.LoadModelFromMesh(mesh)
 
-    boxes_pos: [3]rl.Vector3
-    boxes_id := [3]b3.BodyId{
+    boxes_pos: [6]rl.Vector3
+    boxes_id := [6]b3.BodyId{
         entity_1_id,
         entity_2_id,
         entity_3_id,
+        entity_4_id,
+        entity_5_id,
+        entity_6_id,
     }
 
     // Create a dynamic Box3d sphere
@@ -175,7 +183,8 @@ main :: proc() {
 
     sphere_body_def := b3.DefaultBodyDef()
     sphere_body_def.type = .dynamicBody
-    sphere_body_def.position = rl.Vector3{ 5.0, 30.0, -1.0 }
+    sphere_body_def.position = rl.Vector3{ 5.0, 5.0, -3.0 }
+    sphere_body_def.linearVelocity = rl.Vector3 {-30, 0, 0}
 
     sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
     _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
@@ -202,6 +211,7 @@ main :: proc() {
 
     is_editing: bool
     is_running: bool
+    is_shoot: bool
     current_pos: rl.Vector3
     sphere_pos : rl.Vector3
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
@@ -225,9 +235,20 @@ main :: proc() {
 			delta_time := rl.GetFrameTime()
 			b3.World_Step(world_id, delta_time, 4)
 		} 
+        // if rl.IsKeyPressed(.S) {
+        //     is_shoot = !is_shoot
+        // }
+        // if is_shoot {
+        //     // sphere is not subject to physics at the beginning of the scene
+        //     // if triggered by KB, it is added to the world
+		// 	delta_time := rl.GetFrameTime()
+        //     // sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
+        //     _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
+		// 	b3.World_Step(world_id, delta_time, 4)
+		// } 
 
         // render
-        for i in 0..<3 {
+        for i in 0..<len(boxes_id) {
             boxes_pos[i] = b3.Body_GetPosition(boxes_id[i])
         }
         sphere_pos = b3.Body_GetPosition(sphere_body_id)
@@ -239,7 +260,7 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         // cube
-        for i in 0..<3 {
+        for i in 0..<len(boxes_pos) {
             model.transform = get_body_transform(boxes_id[i])
             rl.DrawModel(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 57, 255, 20, 255 },)
             rl.DrawModelWires(model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
