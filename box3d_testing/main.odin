@@ -113,13 +113,35 @@ create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
     dynamic_box := b3.MakeCubeHull(1.0)
     shape_def := b3.DefaultShapeDef()
     shape_def.density = 1.0
-    shape_def.baseMaterial.friction = 0.2
-    shape_def.baseMaterial.restitution = 0.1
+    shape_def.baseMaterial.friction = 0.1
+    shape_def.baseMaterial.restitution = 0.2
     
     _ = b3.CreateHullShape(cube_body_id, shape_def, &dynamic_box.base)
     fmt.printfln("bodyId: %v", cube_body_id)
     return cube_body_id
-} 
+}
+
+create_sphere :: proc(radius: f32, position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
+    // Create a dynamic Box3d sphere
+    sphere_radius := f32(radius)
+    sphere := b3.Sphere{ radius = sphere_radius }
+
+    sphere_shape_def := b3.DefaultShapeDef()
+    sphere_shape_def.density = 1.0
+    sphere_shape_def.baseMaterial.friction = 0.1
+    sphere_shape_def.baseMaterial.restitution = 0.1
+
+    sphere_body_def := b3.DefaultBodyDef()
+    sphere_body_def.type = .dynamicBody
+    sphere_body_def.position = position
+    sphere_body_def.linearVelocity = rl.Vector3{0, 0, 0}
+    sphere_body_def.isBullet = true
+    // sphere_body_def.linearVelocity = rl.Vector3 {-10, 0, 0}
+
+    sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
+    _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
+    return sphere_body_id
+}
 
 main :: proc() {
     // Initialize raylib
@@ -133,6 +155,7 @@ main :: proc() {
 
     // Create the physics world
     world_id := b3.CreateWorld(world_def)
+    b3.World_EnableContinuous(world_id, true)
     defer b3.DestroyWorld(world_id)
 
     // Define the static ground body
@@ -145,6 +168,7 @@ main :: proc() {
     ground_box := b3.MakeBoxHull(20.0, 2.0, 20.0)
     ground_shape_def := b3.DefaultShapeDef()
     _ = b3.CreateHullShape(ground_id, ground_shape_def, &ground_box.base)
+    fmt.printfln("floor created: %v", ground_id)
 
     // floor mesh
     floor_mesh := rl.GenMeshCube(20.0, 2.0, 20.0)
@@ -181,23 +205,8 @@ main :: proc() {
         rl.LoadModelFromMesh(mesh),
     }
 
-    // Create a dynamic Box3d sphere
-    sphere_radius := f32(1.5)
-    sphere := b3.Sphere{ radius = sphere_radius }
-
-    sphere_shape_def := b3.DefaultShapeDef()
-    sphere_shape_def.density = 1.0
-    sphere_shape_def.baseMaterial.friction = 0.1
-    sphere_shape_def.baseMaterial.restitution = 1.0
-
-    sphere_body_def := b3.DefaultBodyDef()
-    sphere_body_def.type = .dynamicBody
-    sphere_body_def.position = rl.Vector3{ 5.0, 5.0, -3.0 }
-    // sphere_body_def.linearVelocity = rl.Vector3 {-30, 0, 0}
-
-    sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
-    // _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
-
+    sphere_radius := f32(1.0)
+    sphere_body_id: b3.BodyId
     sphere_mesh := rl.GenMeshSphere(sphere_radius, 10, 20)
     sphere_model := rl.LoadModelFromMesh(sphere_mesh)
 
@@ -205,7 +214,6 @@ main :: proc() {
     camera := rl.Camera3D{
         position = rl.Vector3{ 40.0, 15.0, 40.0 }, // Camera position
         target = rl.Vector3{ 0.0, 10.0, 0.0 },      // Camera looking at point
-        // target = b3_initialPos,      // Camera looking at point
         up = rl.Vector3{ 0.0, 1.0, 0.0 },          // Camera up vector (rotation towards target)
         fovy = f32(45.0),                                // Camera field-of-view Y
         projection = .PERSPECTIVE,
@@ -226,6 +234,9 @@ main :: proc() {
     sphere_pos : rl.Vector3
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
     transform_matrix_sphere := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
+
+    physics_dt: f32 = 1.0 / 60.0
+    physics_accumulator: f32 = 0.0
   
     rl.DisableCursor()
 
@@ -243,32 +254,33 @@ main :: proc() {
         if is_running {
             // simulation by discrete time steps
             if !sphere_is_spawned {
-                fmt.printfln("is_spawned: %v", sphere_is_spawned)
-                _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
-                b3.Body_ApplyLinearImpulseToCenter(sphere_body_id, rl.Vector3{ 0, -60, 0 }, true)
-                // TO DO: make the full sphere declaration here
+                sphere_body_id = create_sphere(
+                    radius = sphere_radius, 
+                    position = rl.Vector3{ 5.0, 5.0, -3.0 }, 
+                    world_id = world_id
+                )
+                b3.Body_ApplyLinearImpulseToCenter(sphere_body_id, rl.Vector3{ -2, 30, 0 }, true)
+                fmt.printfln("sphere created: %v", sphere_body_id)
                 sphere_is_spawned = true
             }
-			delta_time := rl.GetFrameTime()
-			b3.World_Step(world_id, delta_time, 4)
+            frame_dt := min(rl.GetFrameTime(), 0.1)
+            physics_accumulator += frame_dt
+            for physics_accumulator >= physics_dt {
+                b3.World_Step(world_id, physics_dt, 8)
+                physics_accumulator -= physics_dt
+            }
+
+			// delta_time := rl.GetFrameTime()
+			// b3.World_Step(world_id, delta_time, 4)
 		} 
-        // if rl.IsKeyPressed(.S) {
-        //     is_shoot = !is_shoot
-        // }
-        // if is_shoot {
-        //     // sphere is not subject to physics at the beginning of the scene
-        //     // if triggered by KB, it is added to the world
-		// 	delta_time := rl.GetFrameTime()
-        //     // sphere_body_id := b3.CreateBody(world_id, sphere_body_def)
-        //     _ = b3.CreateSphereShape(sphere_body_id, sphere_shape_def, &sphere)
-		// 	b3.World_Step(world_id, delta_time, 4)
-		// } 
 
         // render
         for i in 0..<len(boxes_id) {
             boxes_pos[i] = b3.Body_GetPosition(boxes_id[i])
         }
-        sphere_pos = b3.Body_GetPosition(sphere_body_id)
+        if sphere_is_spawned{
+            sphere_pos = b3.Body_GetPosition(sphere_body_id)
+        }
         imgui_display(&current_pos, &sphere_pos, &world_def.gravity)
 
         rl.BeginDrawing()
@@ -284,9 +296,11 @@ main :: proc() {
             rl.DrawModelWires(current_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.BLACK,)
         }
         // sphere
-        sphere_model.transform = get_body_transform(sphere_body_id)
-        rl.DrawModel(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 255, 240, 30, 255 },)
-        // rl.DrawModelWires(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
+        if sphere_is_spawned{
+            sphere_model.transform = get_body_transform(sphere_body_id)
+            rl.DrawModel(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.Color{ 255, 240, 30, 255 },)
+            // rl.DrawModelWires(sphere_model, rl.Vector3{ 0.0, 0.0, 0.0 }, 1.0, rl.RAYWHITE,)
+        }
 
         // floor
         rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{0, 0, 28, 255}) // should be half the thickness of the floor
