@@ -215,7 +215,7 @@ main :: proc() {
         position = rl.Vector3{ 40.0, 15.0, 40.0 }, // Camera position
         target = rl.Vector3{ 0.0, 10.0, 0.0 },      // Camera looking at point
         up = rl.Vector3{ 0.0, 1.0, 0.0 },          // Camera up vector (rotation towards target)
-        fovy = f32(45.0),                                // Camera field-of-view Y
+        fovy = f32(60.0),                                // Camera field-of-view Y
         projection = .PERSPECTIVE,
     }
 
@@ -235,7 +235,7 @@ main :: proc() {
     transform_matrix := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
     transform_matrix_sphere := rl.Matrix(1) // same as rl.MatrixIdentity() <- deprecated
 
-    physics_dt: f32 = 1.0 / 60.0
+    physics_dt: f32 = 1.0 / 120.0
     physics_accumulator: f32 = 0.0
   
     rl.DisableCursor()
@@ -246,7 +246,7 @@ main :: proc() {
             is_editing = !is_editing
         }
         if is_editing {
-            rl.UpdateCamera(&camera, .FREE)
+            rl.UpdateCamera(&camera, .THIRD_PERSON)
         }
         if rl.IsKeyPressed(.ENTER) {
             is_running = !is_running
@@ -263,10 +263,10 @@ main :: proc() {
                 fmt.printfln("sphere created: %v", sphere_body_id)
                 sphere_is_spawned = true
             }
-            frame_dt := min(rl.GetFrameTime(), 0.1)
+            frame_dt := min(rl.GetFrameTime(), 0.05)
             physics_accumulator += frame_dt
             for physics_accumulator >= physics_dt {
-                b3.World_Step(world_id, physics_dt, 8)
+                b3.World_Step(world_id, physics_dt, 16)
                 physics_accumulator -= physics_dt
             }
 
