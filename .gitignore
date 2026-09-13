@@ -274,7 +274,7 @@ Thumbs.db
 odin
 !odin/
 **/*.dSYM
-*.bin
+#*.bin
 demo.bin
 libLLVM*.so*
 *.a
