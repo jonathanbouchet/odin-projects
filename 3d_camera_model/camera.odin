@@ -2,6 +2,7 @@ package main
 
 import rl "vendor:raylib"
 import "core:math"
+import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 
 clamp_f32 :: proc(v, min_value, max_value: f32) -> f32 {
     if v < min_value {
@@ -34,12 +35,13 @@ cross3 :: proc(a, b: rl.Vector3) -> rl.Vector3 {
 }
 
 update_camera :: proc(camera: ^rl.Camera3D, dt: f32) {
+    io:= imgui.GetIO()
     // Camera-to-target vector.
     offset := camera.position - camera.target
     distance := length3(offset)
 
     // Mouse panning.
-    if rl.IsMouseButtonDown(.LEFT) {
+    if rl.IsMouseButtonDown(.LEFT) && !io.WantCaptureMouse{
         mouse_delta := rl.GetMouseDelta()
 
         forward := normalize3(camera.target - camera.position)
