@@ -25,6 +25,10 @@ imgui_display :: proc(light_pos: ^[3]f32, light_color: ^[3]f32, ambient_color: ^
 
     // --- Define ImGui UI Layout ---
     imgui.Begin("Debug")
+    imgui.SeparatorText("Camera Control")
+    imgui.Text("Left mouse drag: screen-space panning")
+    imgui.Text("rotation: left/right arrow keys")
+    imgui.Text("zoom: up/down arrow keys")
     imgui.SeparatorText("Window")
     imgui.TextUnformatted(fps_cstring)
     imgui.TextUnformatted(window_size_text_cstring)

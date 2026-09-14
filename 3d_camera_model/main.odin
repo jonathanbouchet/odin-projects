@@ -38,7 +38,7 @@ update_shader_values :: proc(
 
 main :: proc() {
     // raylib window
-    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Raylib 3D Camera Mouse Control")
+    rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
     defer rl.CloseWindow()
 
     // camera
