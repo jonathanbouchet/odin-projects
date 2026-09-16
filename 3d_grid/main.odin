@@ -44,6 +44,9 @@ main :: proc() {
     bb := rl.GetModelBoundingBox(model)
     fmt.printfln("bb: %v", bb)
     position := rl.Vector3{ 1.0, 1.0, 1.0 } // center of the cube so it will appear at gridX=0, gridZ=0 if W,H,L = 2
+    // need to update BB if position is shifted from 0, 0, 0
+    bb.min += position
+    bb.max += position
     tileSize := 2
     gridX: i32
     gridZ: i32
