@@ -40,10 +40,10 @@ main :: proc() {
         projection = .PERSPECTIVE,
     }
     rl.SetTargetFPS(TARGET_FPS)
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(2.0, 2.0, 2.0))
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(2.0, 0.01, 2.0))
     bb := rl.GetModelBoundingBox(model)
     fmt.printfln("bb: %v", bb)
-    position := rl.Vector3{ 1.0, 1.0, 1.0 } // center of the cube so it will appear at gridX=0, gridZ=0 if W,H,L = 2
+    position := rl.Vector3{ 1.0, 0.01, 1.0 } // center of the cube so it will appear at gridX=0, gridZ=0 if W,H,L = 2
     // need to update BB if position is shifted from 0, 0, 0
     bb.min += position
     bb.max += position
@@ -93,8 +93,8 @@ main :: proc() {
         rl.ClearBackground({ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        rl.DrawModel(model, position, 1.0, rl.RED)
-        rl.DrawCubeWires(position, 2.0, 2.0, 2.0, rl.GREEN if is_hit else rl.GRAY)
+        rl.DrawModel(model, position, 1.0, rl.GREEN if is_hit else rl.RED)
+        rl.DrawCubeWires(position, 2.0, 0.01, 2.0, rl.GREEN if is_hit else rl.GRAY)
         rl.DrawGrid(10, 2.0)
         rl.DrawLine3D(rl.Vector3{ 0.0, 0.01, -10.0 }, rl.Vector3{ 0.0, 0.01, 10.0 }, rl.DARKBLUE )
         rl.DrawLine3D(rl.Vector3{ -10.0, 0.01, 0.0 }, rl.Vector3{ 10.0, 0.01, 0.0 }, rl.DARKBLUE )
