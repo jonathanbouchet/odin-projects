@@ -55,8 +55,11 @@ main :: proc() {
     // Main game loop
     for !rl.WindowShouldClose() {
         // update 
-        is_hit = false
         dt := rl.GetFrameTime()
+        update_camera(&camera, dt)
+
+        // logic
+        is_hit = false
         mouse_pos := rl.GetMousePosition()
         ray := rl.GetScreenToWorldRay(mouse_pos, camera)
         groundY := f32(0.0)
