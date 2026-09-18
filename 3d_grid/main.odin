@@ -5,9 +5,65 @@ import "core:mem"
 import "core:math"
 import rl "vendor:raylib"
 
+import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
+import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
+
 SCREEN_WIDTH :: 600
 SCREEN_HEIGHT :: 600
 TARGET_FPS :: 60
+
+GRID_SIZE :: 2
+GRID_CELL :: 2
+
+Tile :: struct {
+    i: i32,
+    j: i32,
+    x: f32,
+    y: f32,
+    z: f32,
+    status: bool,
+    color: rl.Color,
+    width: i32,
+    height: i32,
+    bb: rl.BoundingBox
+}
+
+grid: [GRID_SIZE*GRID_SIZE]Tile
+
+// create a grid
+generate_grid :: proc() {
+    min_i := GRID_SIZE / 2 - GRID_SIZE
+    min_j : = GRID_SIZE / 2 - GRID_SIZE
+    fmt.printfln("min_i: %d, min_j: %d", min_i, min_j)
+    counter := i32(0)
+
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(GRID_CELL, 0.01, GRID_CELL))
+    base_bounding_box := rl.GetModelBoundingBox(model)
+
+    for i in min_i..<GRID_SIZE - 1{
+        for j in min_j..<GRID_SIZE - 1{
+            fmt.printfln("i: %d, j: %d", i, j)
+            tmp_bb := base_bounding_box
+            tmp_bb.min += rl.Vector3{ f32(i*GRID_CELL), f32(0.01), f32(j*GRID_CELL)}
+            tmp_bb.max += rl.Vector3{ f32(i*GRID_CELL), f32(0.01), f32(j*GRID_CELL)}
+            tile := Tile{
+                i = i32(i),
+                j = i32(j),
+                x = f32(i*GRID_CELL),
+                y = f32(0.01),
+                z = f32(j*GRID_CELL),
+                status = false,
+                color = rl.DARKGRAY,
+                width = i32(GRID_CELL),
+                height = i32(GRID_CELL),
+                bb = tmp_bb
+            }
+            grid[counter] = tile
+            counter += 1
+        }        
+    }
+}
+
 
 show_memory :: proc() {
     track: mem.Tracking_Allocator
@@ -40,6 +96,19 @@ main :: proc() {
         projection = .PERSPECTIVE,
     }
     rl.SetTargetFPS(TARGET_FPS)
+    // grid
+    generate_grid()
+    fmt.printfln("grid length: %v", len(grid))
+    fmt.printfln("grid[0]: %v", grid[0])
+
+    imgui.CreateContext(nil)
+	defer imgui.DestroyContext(nil)
+
+    // Initialize ImGui Backend
+    rlimgui.init()
+    defer rlimgui.shutdown()
+
+    // models
     model := rl.LoadModelFromMesh(rl.GenMeshCube(2.0, 0.01, 2.0))
     bb := rl.GetModelBoundingBox(model)
     fmt.printfln("bb: %v", bb)
@@ -57,6 +126,9 @@ main :: proc() {
         // update 
         dt := rl.GetFrameTime()
         update_camera(&camera, dt)
+
+        // call imgui
+        imgui_display()
 
         // logic
         is_hit = false
@@ -99,6 +171,9 @@ main :: proc() {
         rl.DrawLine3D(rl.Vector3{ 0.0, 0.01, -10.0 }, rl.Vector3{ 0.0, 0.01, 10.0 }, rl.DARKBLUE )
         rl.DrawLine3D(rl.Vector3{ -10.0, 0.01, 0.0 }, rl.Vector3{ 10.0, 0.01, 0.0 }, rl.DARKBLUE )
         rl.EndMode3D()
+
+        imgui.Render()
+		rlimgui.render_draw_data(imgui.GetDrawData())
 
         grid_pos_text := fmt.ctprintf("X:%v Z:%v", gridX, gridZ)
         is_detected_text := fmt.ctprintf("Mouse Hover: %v", is_hit)
