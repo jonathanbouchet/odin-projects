@@ -12,10 +12,10 @@ SCREEN_WIDTH :: 800
 SCREEN_HEIGHT :: 800
 TARGET_FPS :: 60
 
-GRID_SIZE :: 4 // should be even for a symetric grid around (0,0)
+GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
-GRID_CELL :: 2
-GRID_NUM_CELLS :: 64 // total number of cells
+CELL_WIDTH :: 2
+GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
 
 Tile :: struct {
@@ -43,7 +43,7 @@ generate_grid :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     // 12 13 14 15
     counter := i32(0)
 
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(GRID_CELL, 0.01, GRID_CELL))
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
     base_bounding_box := rl.GetModelBoundingBox(model)
 
     for jj in 0..<2 * GRID_SIZE {
@@ -52,13 +52,15 @@ generate_grid :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
                 id = counter,
                 id_row = i32(jj),
                 id_col = i32(ii),
-                i = i32(GRID_CELL * ii + 1) - GRID_CELL * GRID_SIZE,
-                j = i32(GRID_CELL * jj + 1) - GRID_CELL * GRID_SIZE,
+                // i = i32(GRID_CELL * ii + 1) - GRID_CELL * GRID_SIZE ,
+                // j = i32(GRID_CELL * jj + 1) - GRID_CELL * GRID_SIZE,
+                i = i32(-CELL_WIDTH * GRID_SIZE + ii*CELL_WIDTH),
+                j = i32(-CELL_WIDTH * GRID_SIZE + jj*CELL_WIDTH),
                 status = false,
                 color = rl.Color{ 0, 0, 28, 255 },
                 color_hit = rl.GREEN,
-                width = i32(GRID_CELL),
-                height = i32(GRID_CELL)
+                width = i32(CELL_WIDTH),
+                height = i32(CELL_WIDTH)
             }
             grid[counter] = tile
             counter += 1
@@ -113,12 +115,12 @@ main :: proc() {
     defer rlimgui.shutdown()
 
     // models
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(GRID_CELL, 0.01, GRID_CELL))
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
     defer rl.UnloadModel(model)
     model_house := rl.LoadModel("assets/building_A.gltf")
     defer rl.UnloadModel(model_house)
 
-    tileSize := GRID_CELL
+    tileSize := CELL_WIDTH
     gridX: i32
     gridZ: i32
 
@@ -127,9 +129,6 @@ main :: proc() {
         // update 
         dt := rl.GetFrameTime()
         update_camera(&camera, dt)
-
-        // call imgui
-        imgui_display()
 
         // logic
         mouse_pos := rl.GetMousePosition()
@@ -158,6 +157,9 @@ main :: proc() {
             }
         }
 
+        // call imgui
+        imgui_display(mouse_pos, gridX, gridZ)
+
         // hit := rl.GetRayCollisionBox(ray, bb)
 
         // if hit.hit{
@@ -173,7 +175,7 @@ main :: proc() {
         rl.BeginMode3D(camera)
         for i in 0..<len(grid) {
 
-            tmp_pos := rl.Vector3{f32( grid[i].i), -0.02, f32(grid[i].j) }
+            tmp_pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.02, f32(grid[i].j + CELL_WIDTH/2) }
             
             if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
                 rl.DrawModel(model, tmp_pos, 1.0, grid[i].color_hit)
@@ -187,7 +189,7 @@ main :: proc() {
         }
 
 
-        rl.DrawGrid(10, GRID_CELL)
+        rl.DrawGrid(10, CELL_WIDTH)
         rl.DrawLine3D(rl.Vector3{ 0.0, 0.01, -10.0 }, rl.Vector3{ 0.0, 0.01, 10.0 }, rl.DARKBLUE )
         rl.DrawLine3D(rl.Vector3{ -10.0, 0.01, 0.0 }, rl.Vector3{ 10.0, 0.01, 0.0 }, rl.DARKBLUE )
         rl.EndMode3D()
@@ -195,11 +197,11 @@ main :: proc() {
         imgui.Render()
 		rlimgui.render_draw_data(imgui.GetDrawData())
 
-        grid_pos_text := fmt.ctprintf("X:%v Z:%v", gridX, gridZ)
-        rl.DrawFPS(0, 0)
-        rl.DrawText(grid_pos_text, 0, 20, 20, rl.GREEN)
-        mouse_pos_text := fmt.ctprintf("X:%v Y:%v", rl.GetMousePosition().x, rl.GetMousePosition().y)
-        rl.DrawText(mouse_pos_text, 0, 40, 20, rl.GREEN)
+        // grid_pos_text := fmt.ctprintf("i:%v j:%v", gridX, gridZ)
+        // rl.DrawFPS(0, 0)
+        // rl.DrawText(grid_pos_text, 0, 20, 20, rl.GREEN)
+        // mouse_pos_text := fmt.ctprintf("X:%.1f Y:%.1f", rl.GetMousePosition().x, rl.GetMousePosition().y)
+        // rl.DrawText(mouse_pos_text, 0, 40, 20, rl.GREEN)
 
         rl.EndDrawing()
     }
