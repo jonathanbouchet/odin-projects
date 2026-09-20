@@ -12,10 +12,10 @@ SCREEN_WIDTH :: 800
 SCREEN_HEIGHT :: 800
 TARGET_FPS :: 60
 
-GRID_SIZE :: 5 // should be even for a symetric grid around (0,0)
+GRID_SIZE :: 4 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
 GRID_CELL :: 2
-GRID_NUM_CELLS :: 100 // total number of cells
+GRID_NUM_CELLS :: 64 // total number of cells
 // formula is i -> (i x 2)^2
 
 Tile :: struct {
@@ -24,7 +24,7 @@ Tile :: struct {
     id_col: i32, // col id on the screen grid
     i: i32, // "x" coordinate on the screen
     j: i32, // "y" coordinate on the screen
-    status: bool, // placeholder: right now just flag if the muouse is clicked on this tile
+    status: bool, // placeholder: right now just flag if the mouse is clicked on this tile
     color: rl.Color, // base color
     color_hit: rl.Color, // color if the tile is highlighted by the mouse
     width: i32, // width of the tile ; this is not pixel
@@ -113,12 +113,12 @@ main :: proc() {
     defer rlimgui.shutdown()
 
     // models
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(2.0, 0.01, 2.0))
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(GRID_CELL, 0.01, GRID_CELL))
     defer rl.UnloadModel(model)
     model_house := rl.LoadModel("assets/building_A.gltf")
-    defer rl.UnloadModel((model_house))
+    defer rl.UnloadModel(model_house)
 
-    tileSize := 2
+    tileSize := GRID_CELL
     gridX: i32
     gridZ: i32
 
@@ -142,9 +142,9 @@ main :: proc() {
 
         groundPosition := rl.Vector3{ 0.0, 0.0, 0.0 }
 
-        if math.abs(ray.direction.y)> 0.0001{
+        if math.abs(ray.direction.y)> 0.0001 {
             t := (groundY - ray.position.y) / ray.direction.y
-            if t > 0.0{
+            if t > 0.0 {
                 groundPosition = ray.position + ray.direction * t
             }
             gridX = i32(math.floor_f32(groundPosition.x / f32(tileSize)))
@@ -168,12 +168,12 @@ main :: proc() {
 
         // render
         rl.BeginDrawing()
-        rl.ClearBackground({ 20, 20, 20, 255 })
+        rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
         for i in 0..<len(grid) {
 
-            tmp_pos := rl.Vector3 {f32(grid[i].i), -0.02, f32(grid[i].j)}
+            tmp_pos := rl.Vector3{f32( grid[i].i), -0.02, f32(grid[i].j) }
             
             if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
                 rl.DrawModel(model, tmp_pos, 1.0, grid[i].color_hit)
@@ -182,12 +182,12 @@ main :: proc() {
             }
             // show the model if it has been seelcted
             if grid[i].status {
-                rl.DrawModelEx(model_house, tmp_pos, rl.Vector3{0.0, 0.0, 0.0}, 0.0, rl.Vector3{ 1.0, 1.0, 1.0 }, rl.RAYWHITE)
+                rl.DrawModelEx(model_house, tmp_pos, rl.Vector3{ 0.0, 0.0, 0.0 }, 0.0, rl.Vector3{ 1.0, 1.0, 1.0 }, rl.RAYWHITE)
             }
         }
 
 
-        rl.DrawGrid(10, 2.0)
+        rl.DrawGrid(10, GRID_CELL)
         rl.DrawLine3D(rl.Vector3{ 0.0, 0.01, -10.0 }, rl.Vector3{ 0.0, 0.01, 10.0 }, rl.DARKBLUE )
         rl.DrawLine3D(rl.Vector3{ -10.0, 0.01, 0.0 }, rl.Vector3{ 10.0, 0.01, 0.0 }, rl.DARKBLUE )
         rl.EndMode3D()
