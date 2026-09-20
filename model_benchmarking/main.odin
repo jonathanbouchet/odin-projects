@@ -9,21 +9,8 @@ import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 import rl "vendor:raylib"
 
-show_memory :: proc() {
-    track: mem.Tracking_Allocator
-    mem.tracking_allocator_init(&track, context.allocator)
-    context.allocator = mem.tracking_allocator(&track)
-
-    defer {
-        for _, entry in track.allocation_map {
-            fmt.eprintf("%v leaked %v bytes\n", entry.location, entry.size)
-        }
-        for entry in track.bad_free_array {
-            fmt.eprintf("%v bad free\n", entry.location)
-        }
-        mem.tracking_allocator_destroy(&track)
-    }
-}
+SCREEN_WIDTH  :: 800
+SCREEN_HEIGHT :: 800
 
 update_shader_values :: proc(
     light_direction: ^[3]f32, 
@@ -66,7 +53,6 @@ Settings_Data :: struct {
 }
 
 main :: proc() {
-    // show_memory()
     // Track allocations made through context.allocator.
     tracking: mem.Tracking_Allocator
     mem.tracking_allocator_init(&tracking, context.allocator)
@@ -112,9 +98,7 @@ main :: proc() {
 
         mem.tracking_allocator_destroy(&tracking)
     }
-    // 1. Initialize Window
-    SCREEN_WIDTH  :: 800
-    SCREEN_HEIGHT :: 800
+
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Raylib 3D Camera Mouse Control")
     defer rl.CloseWindow()
 
