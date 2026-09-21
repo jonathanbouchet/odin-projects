@@ -14,7 +14,7 @@ TARGET_FPS :: 60
 
 GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
-CELL_WIDTH :: 2
+CELL_WIDTH :: 10
 GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
 
@@ -184,7 +184,8 @@ main :: proc() {
             }
             // show the model if it has been seelcted
             if grid[i].status {
-                rl.DrawModelEx(model_house, tmp_pos, rl.Vector3{ 0.0, 0.0, 0.0 }, 0.0, rl.Vector3{ 1.0, 1.0, 1.0 }, rl.RAYWHITE)
+                scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
+                rl.DrawModelEx(model_house, tmp_pos, rl.Vector3{ 0.0, 0.0, 0.0 }, 0.0, rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, rl.RAYWHITE)
             }
         }
 
