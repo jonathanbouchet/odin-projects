@@ -221,43 +221,14 @@ main :: proc() {
             // show the model if it has been selected
             if grid[i].status {
                 scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
-                // rl.DrawModelEx(
-                //     model_house, 
-                //     tmp_pos, 
-                //     rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                //     90.0, // this will be used to rotate assets
-                //     rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                //     rl.RAYWHITE
-                // )
-                if i == 1 || i == 2 || i == 13 || i == 14 || i == 4 || i == 7 || i == 8 || i == 11{ 
-                    rl.DrawModelEx(
-                        models[1],
+                rl.DrawModelEx(
+                        models[map_data.tile_id[i]],
                         tmp_pos, 
                         rl.Vector3{ 0.0, 1.0, 0.0 }, 
                         map_data.tile_rotation[i],
                         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
                         rl.RAYWHITE
-                    )
-                } else if i == 0 || i == 3 || i == 12 || i == 15 {
-                    rl.DrawModelEx(
-                        models[2], 
-                        tmp_pos, 
-                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation[i],
-                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                        rl.RAYWHITE
-                    )
-                }
-                else {
-                    rl.DrawModelEx(
-                        models[0], 
-                        tmp_pos, 
-                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation[i],
-                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                        rl.RAYWHITE
-                    )
-                }
+                )
             }
         }
 
@@ -269,12 +240,6 @@ main :: proc() {
 
         imgui.Render()
 		rlimgui.render_draw_data(imgui.GetDrawData())
-
-        // grid_pos_text := fmt.ctprintf("i:%v j:%v", gridX, gridZ)
-        // rl.DrawFPS(0, 0)
-        // rl.DrawText(grid_pos_text, 0, 20, 20, rl.GREEN)
-        // mouse_pos_text := fmt.ctprintf("X:%.1f Y:%.1f", rl.GetMousePosition().x, rl.GetMousePosition().y)
-        // rl.DrawText(mouse_pos_text, 0, 40, 20, rl.GREEN)
 
         rl.EndDrawing()
     }
