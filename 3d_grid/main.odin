@@ -1,5 +1,7 @@
 package threeDgrid
 
+import "core:os"
+import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:math"
@@ -14,9 +16,31 @@ TARGET_FPS :: 60
 
 GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
-CELL_WIDTH :: 10
+CELL_WIDTH :: 8
 GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
+
+Tile_Input_Data :: struct {
+    tile_id: []i32,
+    tile_rotation: []f32,
+    tile_name: []string
+}
+
+read_input_data :: proc(filepath: string) -> Tile_Input_Data {
+    file_data, ok := os.read_entire_file(filepath, context.allocator)
+    if ok != nil {
+        fmt.eprintln("Failed to read file.")
+        empty_data: Tile_Input_Data
+        return empty_data
+	}
+
+	data: Tile_Input_Data
+	err := json.unmarshal(file_data, &data)
+	if err != nil {
+		fmt.eprintln("Parsing error:", err)
+	}
+    return data
+}
 
 Tile :: struct {
     id: i32, // unique id
@@ -89,9 +113,21 @@ main :: proc() {
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
     defer rl.CloseWindow()
 
+    // read input data
+    map_data := read_input_data("map.json")
+    fmt.printfln("map data: %v", map_data)
+
+    models: [3]rl.Model
+    for item, i in map_data.tile_name{
+        fmt.printfln("loading %v at position %v", item, i)
+        models[i] = rl.LoadModel(fmt.ctprint(item))
+    }
+
+    // fmt.printfln("models loaded: %v", models)
+
     // camera
     camera := rl.Camera3D{
-        position   = { 0.0, 8.0, 10.0 },
+        position   = { 0.0, 16.0, 20.0 },
         target     = { 0.0, 0.0, 0.0 },
         up         = { 0.0, 1.0, 0.0 },
         fovy       = 60.0,
@@ -117,7 +153,7 @@ main :: proc() {
     // models
     model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
     defer rl.UnloadModel(model)
-    model_house := rl.LoadModel("assets/building_A.gltf")
+    model_house := rl.LoadModel("assets/road-crossroad.glb")
     defer rl.UnloadModel(model_house)
 
     tileSize := CELL_WIDTH
@@ -182,10 +218,46 @@ main :: proc() {
             } else {
                 rl.DrawModel(model, tmp_pos, 1.0, grid[i].color)
             }
-            // show the model if it has been seelcted
+            // show the model if it has been selected
             if grid[i].status {
                 scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
-                rl.DrawModelEx(model_house, tmp_pos, rl.Vector3{ 0.0, 0.0, 0.0 }, 0.0, rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, rl.RAYWHITE)
+                // rl.DrawModelEx(
+                //     model_house, 
+                //     tmp_pos, 
+                //     rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                //     90.0, // this will be used to rotate assets
+                //     rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                //     rl.RAYWHITE
+                // )
+                if i == 1 || i == 2 || i == 13 || i == 14 || i == 4 || i == 7 || i == 8 || i == 11{ 
+                    rl.DrawModelEx(
+                        models[1],
+                        tmp_pos, 
+                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                        map_data.tile_rotation[i],
+                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                        rl.RAYWHITE
+                    )
+                } else if i == 0 || i == 3 || i == 12 || i == 15 {
+                    rl.DrawModelEx(
+                        models[2], 
+                        tmp_pos, 
+                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                        map_data.tile_rotation[i],
+                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                        rl.RAYWHITE
+                    )
+                }
+                else {
+                    rl.DrawModelEx(
+                        models[0], 
+                        tmp_pos, 
+                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                        map_data.tile_rotation[i],
+                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                        rl.RAYWHITE
+                    )
+                }
             }
         }
 
