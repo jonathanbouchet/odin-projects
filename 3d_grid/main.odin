@@ -23,7 +23,7 @@ GRID_NUM_CELLS :: 16 // total number of cells
 Tile_Input_Data :: struct {
     tile_id: []i32,
     tile_rotation: []f32,
-    tile_name: []string
+    tile_name: []cstring
 }
 
 read_input_data :: proc(filepath: string) -> Tile_Input_Data {
@@ -76,8 +76,6 @@ generate_grid :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
                 id = counter,
                 id_row = i32(jj),
                 id_col = i32(ii),
-                // i = i32(GRID_CELL * ii + 1) - GRID_CELL * GRID_SIZE ,
-                // j = i32(GRID_CELL * jj + 1) - GRID_CELL * GRID_SIZE,
                 i = i32(-CELL_WIDTH * GRID_SIZE + ii*CELL_WIDTH),
                 j = i32(-CELL_WIDTH * GRID_SIZE + jj*CELL_WIDTH),
                 status = false,
@@ -120,10 +118,8 @@ main :: proc() {
     models: [3]rl.Model
     for item, i in map_data.tile_name{
         fmt.printfln("loading %v at position %v", item, i)
-        models[i] = rl.LoadModel(fmt.ctprint(item))
+        models[i] = rl.LoadModel(item)
     }
-
-    // fmt.printfln("models loaded: %v", models)
 
     // camera
     camera := rl.Camera3D{
@@ -211,19 +207,19 @@ main :: proc() {
         rl.BeginMode3D(camera)
         for i in 0..<len(grid) {
 
-            tmp_pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.02, f32(grid[i].j + CELL_WIDTH/2) }
+            pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.02, f32(grid[i].j + CELL_WIDTH/2) }
             
             if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
-                rl.DrawModel(model, tmp_pos, 1.0, grid[i].color_hit)
+                rl.DrawModel(model, pos, 1.0, grid[i].color_hit)
             } else {
-                rl.DrawModel(model, tmp_pos, 1.0, grid[i].color)
+                rl.DrawModel(model, pos, 1.0, grid[i].color)
             }
             // show the model if it has been selected
             if grid[i].status {
                 scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
-                        tmp_pos, 
+                        pos, 
                         rl.Vector3{ 0.0, 1.0, 0.0 }, 
                         map_data.tile_rotation[i],
                         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
@@ -231,7 +227,6 @@ main :: proc() {
                 )
             }
         }
-
 
         rl.DrawGrid(10, CELL_WIDTH)
         rl.DrawLine3D(rl.Vector3{ 0.0, 0.01, -10.0 }, rl.Vector3{ 0.0, 0.01, 10.0 }, rl.DARKBLUE )
