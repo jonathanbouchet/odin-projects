@@ -23,7 +23,9 @@ GRID_NUM_CELLS :: 16 // total number of cells
 Tile_Input_Data :: struct {
     tile_id: []i32,
     tile_rotation: []f32,
-    tile_name: []cstring
+    tile_name: []cstring,
+    tile_name_kenney: []cstring,
+    tile_rotation_kenney: []f32,
 }
 
 read_input_data :: proc(filepath: string) -> Tile_Input_Data {
@@ -116,7 +118,7 @@ main :: proc() {
     fmt.printfln("map data: %v", map_data)
 
     models: [3]rl.Model
-    for item, i in map_data.tile_name{
+    for item, i in map_data.tile_name_kenney{
         fmt.printfln("loading %v at position %v", item, i)
         models[i] = rl.LoadModel(item)
     }
@@ -216,12 +218,12 @@ main :: proc() {
             }
             // show the model if it has been selected
             if grid[i].status {
-                scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
+                scaling_factor := f32(2*CELL_WIDTH / GRID_SIZE)
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
                         pos, 
                         rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation[i],
+                        map_data.tile_rotation_kenney[i],
                         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
                         rl.RAYWHITE
                 )
