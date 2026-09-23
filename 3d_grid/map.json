@@ -18,7 +18,7 @@
         "assets/road_straight.gltf",
         "assets/road_corner.gltf"
     ],
-     "tile_name_kenney":[
+    "tile_name_kenney":[
         "assets/tile-low.glb",
         "assets/road-straight.glb",
         "assets/road-bend-sidewalk.glb"
@@ -29,5 +29,17 @@
         90,  0, 0, 90,
         90,  0, 0, 90,
         180,   0, 0, 270
+    ],
+    "tile_name_city":[
+        "assets/city_assets/GLB/grass.glb",
+        "assets/city_assets/GLB/straight.glb",
+        "assets/city_assets/GLB/L_intersection.glb"
+    ],
+    "tile_rotation_city":
+    [ 
+        0, 90, 90, 270,
+        0,  0, 0, 0,
+        0,  0, 0, 0,
+        90,   90, 90, 180
     ]
 }

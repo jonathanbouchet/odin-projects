@@ -10,13 +10,13 @@ import rl "vendor:raylib"
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
-SCREEN_WIDTH :: 800
-SCREEN_HEIGHT :: 800
+SCREEN_WIDTH :: 1000
+SCREEN_HEIGHT :: 1000
 TARGET_FPS :: 60
 
 GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
-CELL_WIDTH :: 10
+CELL_WIDTH :: 4
 GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
 
@@ -26,6 +26,8 @@ Tile_Input_Data :: struct {
     tile_name: []cstring,
     tile_name_kenney: []cstring,
     tile_rotation_kenney: []f32,
+    tile_name_city: []cstring,
+    tile_rotation_city: []f32,
 }
 
 read_input_data :: proc(filepath: string) -> Tile_Input_Data {
@@ -119,14 +121,27 @@ main :: proc() {
     fmt.printfln("map data: %v", map_data)
 
     models: [3]rl.Model
-    for item, i in map_data.tile_name{
+    texture := rl.LoadTexture("assets/city_assets/texture/colorpaletteupdated.png")
+    defer rl.UnloadTexture(texture)
+    rl.GenTextureMipmaps(&texture)
+    rl.SetTextureFilter(texture, .TRILINEAR)
+
+    if texture.id == 0 {
+        fmt.println("Failed to load replacement texture")
+    }
+
+    for item, i in map_data.tile_name_city{
         fmt.printfln("loading %v at position %v", item, i)
         models[i] = rl.LoadModel(item)
+        fmt.printfln("number of materials: %v", models[i].materialCount)
+        for j in 0..<models[i].materialCount {
+            models[i].materials[j].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
+        }
     }
 
     // camera
     camera := rl.Camera3D{
-        position   = { 0.0, 30.0, 30.0 },
+        position   = { 0.0, 20.0, 20.0 },
         target     = { 0.0, 0.0, 0.0 },
         up         = { 0.0, 1.0, 0.0 },
         fovy       = 60.0,
@@ -152,8 +167,14 @@ main :: proc() {
     // models
     model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
     defer rl.UnloadModel(model)
-    model_house := rl.LoadModel("assets/road-crossroad.glb")
-    defer rl.UnloadModel(model_house)
+
+    // car: testing
+    car := rl.LoadModel("assets/city_assets/GLB/sedan.glb")
+    for i in 0..<car.materialCount {
+        car.materials[i].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
+    }
+    defer rl.UnloadModel(car)
+     spawn_car: bool
 
     tileSize := CELL_WIDTH
     gridX: i32
@@ -192,6 +213,10 @@ main :: proc() {
             }
         }
 
+        if rl.IsKeyPressed(.ENTER){
+            spawn_car = !spawn_car
+        }
+
         // call imgui
         imgui_display(mouse_pos, gridX, gridZ)
 
@@ -210,7 +235,8 @@ main :: proc() {
         rl.BeginMode3D(camera)
         for i in 0..<len(grid) {
 
-            pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.02, f32(grid[i].j + CELL_WIDTH/2) }
+            pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
+            pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
             
             if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
                 rl.DrawModel(model, pos, 1.0, grid[i].color_hit)
@@ -219,15 +245,27 @@ main :: proc() {
             }
             // show the model if it has been selected
             if grid[i].status {
-                scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
+                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
+                scaling_factor := f32(0.34)
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
-                        pos, 
+                        pos_model, 
                         rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation[i],
+                        map_data.tile_rotation_city[i],
                         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
                         rl.RAYWHITE
                 )
+            }
+            if spawn_car{
+                car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.2, f32(grid[0].j + CELL_WIDTH/2) }
+                scaling_factor := f32(0.34)
+                rl.DrawModelEx(
+                    car, 
+                    car_pos,
+                    rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                    0,
+                    rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                    rl.RAYWHITE)
             }
         }
 
@@ -240,5 +278,9 @@ main :: proc() {
 		rlimgui.render_draw_data(imgui.GetDrawData())
 
         rl.EndDrawing()
+    }
+    // unload models here
+    for i in 0..<len(models){
+        defer rl.UnloadModel(models[i])
     }
 }
