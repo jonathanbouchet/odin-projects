@@ -1,7 +1,5 @@
 package threeDgrid
 
-import "core:fmt"
-import "core:strings"
 import rl "vendor:raylib"
 
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
@@ -20,8 +18,6 @@ imgui_display :: proc(mouse_pos: rl.Vector2, gridX: i32, gridZ: i32) {
     fps := 1.0 / rl.GetFrameTime()
     fr := rl.GetFrameTime() * 1000.0
     w := [2]i32{rl.GetScreenWidth(), rl.GetScreenHeight()}
-    width:i32 = rl.GetScreenWidth()
-    height:i32 = rl.GetScreenHeight()
    
     // --- Define ImGui UI Layout ---
     imgui.Begin("Debug")

@@ -71,9 +71,6 @@ generate_grid :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     // 12 13 14 15
     counter := i32(0)
 
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
-    base_bounding_box := rl.GetModelBoundingBox(model)
-
     for jj in 0..<2 * GRID_SIZE {
         for ii in 0..<2 * GRID_SIZE {
             tile := Tile{
