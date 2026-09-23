@@ -16,7 +16,7 @@ TARGET_FPS :: 60
 
 GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
-CELL_WIDTH :: 8
+CELL_WIDTH :: 10
 GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
 
@@ -110,6 +110,7 @@ show_memory :: proc() {
 
 main :: proc() {
     show_memory()
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
     defer rl.CloseWindow()
 
@@ -118,14 +119,14 @@ main :: proc() {
     fmt.printfln("map data: %v", map_data)
 
     models: [3]rl.Model
-    for item, i in map_data.tile_name_kenney{
+    for item, i in map_data.tile_name{
         fmt.printfln("loading %v at position %v", item, i)
         models[i] = rl.LoadModel(item)
     }
 
     // camera
     camera := rl.Camera3D{
-        position   = { 0.0, 16.0, 20.0 },
+        position   = { 0.0, 30.0, 30.0 },
         target     = { 0.0, 0.0, 0.0 },
         up         = { 0.0, 1.0, 0.0 },
         fovy       = 60.0,
@@ -218,12 +219,12 @@ main :: proc() {
             }
             // show the model if it has been selected
             if grid[i].status {
-                scaling_factor := f32(2*CELL_WIDTH / GRID_SIZE)
+                scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
                         pos, 
                         rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation_kenney[i],
+                        map_data.tile_rotation[i],
                         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
                         rl.RAYWHITE
                 )

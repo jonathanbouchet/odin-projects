@@ -17,5 +17,17 @@
         "assets/base.gltf",
         "assets/road_straight.gltf",
         "assets/road_corner.gltf"
+    ],
+     "tile_name_kenney":[
+        "assets/tile-low.glb",
+        "assets/road-straight.glb",
+        "assets/road-bend-sidewalk.glb"
+    ],
+    "tile_rotation_kenney":
+    [ 
+        90, 0, 0, 0,
+        90,  0, 0, 90,
+        90,  0, 0, 90,
+        180,   0, 0, 270
     ]
 }
