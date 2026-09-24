@@ -43,8 +43,6 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
     if ok != nil {
         fmt.eprintln("Failed to read file.")
         return T{}
-        // empty_data: format
-        // return empty_data
 	}
 
 	data: T//Tile_Input_Data
@@ -132,6 +130,23 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
     }
 }
 
+draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2, models: ^[]rl.Model) {
+    for i in 0..<len(grid) {
+        pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
+        pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
+        
+        scaling_factor := f32(0.34) // cityassets scaling factor
+        rl.DrawModelEx(
+            models[grid[i].model_id],
+            pos_model, 
+            rl.Vector3{ 0.0, 1.0, 0.0 }, 
+            0.0,
+            rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+            rl.RAYWHITE
+        )
+    }
+}
+
 // create a grid
 generate_grid :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     // initialize a grid
@@ -209,13 +224,6 @@ main :: proc() {
         fmt.println("Failed to load replacement texture")
     }
 
-    // for citybits
-    // texture png is already loaded as citybits_texture.png
-    // for item, i in map_data.tile_name{
-    //     fmt.printfln("loading %v at position %v", item, i)
-    //     models[i] = rl.LoadModel(item)
-    // }
-
     //for city_assets
     for item, i in map_data.tile_name_city{
         fmt.printfln("loading %v at position %v", item, i)
@@ -262,9 +270,6 @@ main :: proc() {
     }
     defer rl.UnloadModel(car)
 
-    // car: testing citybits
-    // car := rl.LoadModel("assets/car_stationwagon.gltf")
-    // defer rl.UnloadModel(car)
     spawn_car: bool
 
     tileSize := CELL_WIDTH
@@ -368,15 +373,6 @@ main :: proc() {
             }
             // show the model if it has been selected
             if grid[i].status {
-                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
-                // rl.DrawModelEx(
-                //         models[map_data.tile_id[i]],
-                //         pos_model, 
-                //         rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                //         map_data.tile_rotation[i],
-                //         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                //         rl.RAYWHITE
-                // )
                 scaling_factor := f32(0.34) // cityassets scaling factor
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
