@@ -5,6 +5,7 @@ import "core:encoding/json"
 import "core:fmt"
 import "core:mem"
 import "core:math"
+import "core:math/rand"
 import rl "vendor:raylib"
 
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
@@ -30,18 +31,27 @@ Tile_Input_Data :: struct {
     tile_rotation_city: []f32,
 }
 
-read_input_data :: proc(filepath: string) -> Tile_Input_Data {
+Tile_Input_Data2 :: struct {
+    tile_path: []cstring,
+    tile_name: []cstring,
+    tile_id: []i32,
+    texture: cstring
+}
+
+read_input_data :: proc(filepath: string, $T: typeid) -> T {
     file_data, ok := os.read_entire_file(filepath, context.allocator)
     if ok != nil {
         fmt.eprintln("Failed to read file.")
-        empty_data: Tile_Input_Data
-        return empty_data
+        return T{}
+        // empty_data: format
+        // return empty_data
 	}
 
-	data: Tile_Input_Data
+	data: T//Tile_Input_Data
 	err := json.unmarshal(file_data, &data)
 	if err != nil {
 		fmt.eprintln("Parsing error:", err)
+        return T{}
 	}
     return data
 }
@@ -57,6 +67,69 @@ Tile :: struct {
     color_hit: rl.Color, // color if the tile is highlighted by the mouse
     width: i32, // width of the tile ; this is not pixel
     height: i32, // height of the tile ; this is not pixel
+}
+
+Tile2 :: struct {
+    id: i32, // unique id
+    id_row: i32, // row id on the screen grid
+    id_col: i32, // col id on the screen grid
+    i: i32, // "x" coordinate on the screen
+    j: i32, // "y" coordinate on the screen
+    status: bool, // placeholder: right now just flag if the mouse is clicked on this tile
+    width: i32, // width of the tile ; this is not pixel
+    height: i32, // height of the tile ; this is not pixel
+    model_id: i32
+}
+
+load_model :: proc(input_data: Tile_Input_Data2, data: ^[]rl.Model) {
+    texture := rl.LoadTexture(input_data.texture)
+    rl.GenTextureMipmaps(&texture)
+    rl.SetTextureFilter(texture, .TRILINEAR)
+
+    if texture.id == 0 {
+        fmt.println("Failed to load replacement texture")
+        return
+    }
+
+    for item, i in input_data.tile_path{
+        fmt.printfln("loading %v at position %v", item, i)
+        data[i] = rl.LoadModel(item)
+        fmt.printfln("number of materials: %v", data[i].materialCount)
+        for j in 0..<data[i].materialCount {
+            data[i].materials[j].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
+        }
+    }
+}
+
+make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
+    counter := i32(0)
+
+    for jj in 0..<2 * GRID_SIZE {
+        for ii in 0..<2 * GRID_SIZE {
+            rng := rand.int32_range(0, 100)
+            model_id: i32 
+            if rng < 10{
+                model_id = 2 // water
+            } else if rng < 20 {
+                model_id = 1 // sand
+            } else{
+                model_id = 0
+            }
+            tile := Tile2{
+                id = counter,
+                id_row = i32(jj),
+                id_col = i32(ii),
+                i = i32(-CELL_WIDTH * GRID_SIZE + ii*CELL_WIDTH),
+                j = i32(-CELL_WIDTH * GRID_SIZE + jj*CELL_WIDTH),
+                status = false,
+                width = i32(CELL_WIDTH),
+                height = i32(CELL_WIDTH),
+                model_id = model_id
+            }
+            grid[counter] = tile
+            counter += 1
+        }        
+    }
 }
 
 // create a grid
@@ -114,8 +187,17 @@ main :: proc() {
     defer rl.CloseWindow()
 
     // read input data
-    map_data := read_input_data("map.json")
+    map_data := read_input_data("map.json", Tile_Input_Data)
     fmt.printfln("map data: %v", map_data)
+
+    map_data2 := read_input_data("map2.json", Tile_Input_Data2)
+    fmt.printfln("map data2: %v", map_data2)
+
+    max_models := i32(len(map_data2.tile_name))
+    models2 := make([]rl.Model, max_models)
+    defer delete(models2)
+
+    load_model(map_data2, &models2)
 
     models: [3]rl.Model
     texture := rl.LoadTexture("assets/city_assets/texture/colorpaletteupdated.png")
