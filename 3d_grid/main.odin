@@ -127,6 +127,14 @@ main :: proc() {
         fmt.println("Failed to load replacement texture")
     }
 
+    // for citybits
+    // texture png is already loaded as citybits_texture.png
+    // for item, i in map_data.tile_name{
+    //     fmt.printfln("loading %v at position %v", item, i)
+    //     models[i] = rl.LoadModel(item)
+    // }
+
+    //for city_assets
     for item, i in map_data.tile_name_city{
         fmt.printfln("loading %v at position %v", item, i)
         models[i] = rl.LoadModel(item)
@@ -165,17 +173,46 @@ main :: proc() {
     model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
     defer rl.UnloadModel(model)
 
-    // car: testing
+    // car: testing cityassets
     car := rl.LoadModel("assets/city_assets/GLB/sedan.glb")
     for i in 0..<car.materialCount {
         car.materials[i].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
     }
     defer rl.UnloadModel(car)
-     spawn_car: bool
+
+    // car: testing citybits
+    // car := rl.LoadModel("assets/car_stationwagon.gltf")
+    // defer rl.UnloadModel(car)
+    spawn_car: bool
 
     tileSize := CELL_WIDTH
     gridX: i32
     gridZ: i32
+
+    // shaders
+    shader := rl.LoadShader("shaders/basic.vs", "shaders/basic.fs")
+    for model in models{
+        for i in 0..<int(model.materialCount){
+            model.materials[i].shader = shader
+        }
+    }
+    // car
+    for i in 0..<car.materialCount{
+        car.materials[i].shader = shader
+    }
+    defer rl.UnloadShader(shader)
+    light_direction := rl.Vector3{-1.0, -1.0, -1.0}
+    light_color := rl.Vector3{0.7, 0.7, 0.7}
+    ambient_color := rl.Vector3{0.25, 0.25, 0.25}
+
+    light_direction_loc := rl.GetShaderLocation(shader, "lightDirection")
+    light_color_loc := rl.GetShaderLocation(shader, "lightColor")
+    ambient_color_loc := rl.GetShaderLocation(shader, "ambientColor")
+
+    update_shader_values(
+        &light_direction, &light_color, &ambient_color,
+        int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+        shader)
 
     // Main game loop
     for !rl.WindowShouldClose() {
@@ -215,7 +252,14 @@ main :: proc() {
         }
 
         // call imgui
-        imgui_display(mouse_pos, gridX, gridZ)
+        // imgui_display(mouse_pos, gridX, gridZ)
+        imgui_display(mouse_pos, gridX, gridZ, &light_direction, &light_color, &ambient_color)
+        // fmt.printfln("light direction: %v", light_direction)
+        update_shader_values(
+            &light_direction, &light_color, &ambient_color,
+            int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+            shader)
+
 
         // hit := rl.GetRayCollisionBox(ray, bb)
 
@@ -242,8 +286,16 @@ main :: proc() {
             }
             // show the model if it has been selected
             if grid[i].status {
-                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE)
-                scaling_factor := f32(0.34)
+                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
+                // rl.DrawModelEx(
+                //         models[map_data.tile_id[i]],
+                //         pos_model, 
+                //         rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                //         map_data.tile_rotation[i],
+                //         rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                //         rl.RAYWHITE
+                // )
+                scaling_factor := f32(0.34) // cityassets scaling factor
                 rl.DrawModelEx(
                         models[map_data.tile_id[i]],
                         pos_model, 
@@ -254,8 +306,9 @@ main :: proc() {
                 )
             }
             if spawn_car{
-                car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.2, f32(grid[0].j + CELL_WIDTH/2) }
+                car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
                 scaling_factor := f32(0.34)
+                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
                 rl.DrawModelEx(
                     car, 
                     car_pos,
