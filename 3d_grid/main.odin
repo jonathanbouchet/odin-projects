@@ -25,7 +25,8 @@ Tile_Input_Data :: struct {
     tile_path: []cstring,
     tile_name: []cstring,
     tile_id: []i32,
-    texture: cstring
+    texture: cstring,
+    car: cstring
 }
 
 read_input_data :: proc(filepath: string, $T: typeid) -> T {
@@ -77,6 +78,26 @@ load_model :: proc(input_data: Tile_Input_Data, data: ^[]rl.Model) {
     }
 }
 
+Car :: struct {
+    model: rl.Model,
+    scaling_factor: f32
+}
+
+load_car :: proc(input_data: Tile_Input_Data) -> Car {
+     texture := rl.LoadTexture(input_data.texture)
+    rl.GenTextureMipmaps(&texture)
+    rl.SetTextureFilter(texture, .TRILINEAR)
+
+    car: Car
+    car.model = rl.LoadModel(input_data.car)
+    for j in 0..<car.model.materialCount {
+        car.model.materials[j].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
+    }
+    car.scaling_factor = f32(1.0 / 3.0)
+    
+    return car
+}
+
 make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     // initialize a grid
     // ordering is from negative row -> positive row, negative col -> positive col
@@ -105,7 +126,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
                 id_col = i32(ii),
                 i = i32(-CELL_WIDTH * GRID_SIZE + ii*CELL_WIDTH),
                 j = i32(-CELL_WIDTH * GRID_SIZE + jj*CELL_WIDTH),
-                status = false,
+                status = false if model_id == 0 else true,
                 width = i32(CELL_WIDTH),
                 height = i32(CELL_WIDTH),
                 model_id = model_id,
@@ -121,8 +142,6 @@ draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model) {
     for i in 0..<len(grid) {
         pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
         pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
-        
-        // scaling_factor := f32(1.0/3.0) // cityassets scaling factor
         rl.DrawModelEx(
             models[grid[i].model_id],
             pos_model, 
@@ -152,18 +171,28 @@ show_memory :: proc() {
 
 main :: proc() {
     show_memory()
+    // raylib initialization
     rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
+    rl.SetTargetFPS(TARGET_FPS)
     defer rl.CloseWindow()
+
+    // imgui initialization
+    imgui.CreateContext(nil)
+	defer imgui.DestroyContext(nil)
+
+    // Initialize ImGui Backend
+    rlimgui.init()
+    defer rlimgui.shutdown()
 
     // read input data
     map_data := read_input_data("map.json", Tile_Input_Data)
     fmt.printfln("map data: %v", map_data)
 
+    // add render models
     max_models := i32(len(map_data.tile_name))
     models := make([]rl.Model, max_models)
     defer delete(models)
-
     load_model(map_data, &models)
 
     texture := rl.LoadTexture("assets/city_assets/texture/colorpaletteupdated.png")
@@ -183,28 +212,12 @@ main :: proc() {
         fovy       = 60.0,
         projection = .PERSPECTIVE,
     }
-    rl.SetTargetFPS(TARGET_FPS)
 
     grid: [GRID_NUM_CELLS]Tile
     make_map(&grid)
 
-    imgui.CreateContext(nil)
-	defer imgui.DestroyContext(nil)
-
-    // Initialize ImGui Backend
-    rlimgui.init()
-    defer rlimgui.shutdown()
-
-    // models
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
-    defer rl.UnloadModel(model)
-
-    // car: testing cityassets
-    car := rl.LoadModel("assets/city_assets/GLB/sedan.glb")
-    for i in 0..<car.materialCount {
-        car.materials[i].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
-    }
-    defer rl.UnloadModel(car)
+    car := load_car(map_data)
+    defer rl.UnloadModel(car.model)
 
     spawn_car: bool
 
@@ -220,8 +233,8 @@ main :: proc() {
         }
     }
     // car
-    for i in 0..<car.materialCount{
-        car.materials[i].shader = shader
+    for i in 0..<car.model.materialCount{
+        car.model.materials[i].shader = shader
     }
     defer rl.UnloadShader(shader)
     light_direction := rl.Vector3{-1.0, -1.0, -1.0}
@@ -282,7 +295,6 @@ main :: proc() {
             int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
             shader)
 
-
         // hit := rl.GetRayCollisionBox(ray, bb)
 
         // if hit.hit{
@@ -300,14 +312,12 @@ main :: proc() {
         
         if spawn_car{
             car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
-            scaling_factor := f32(1.0 / 3.0)
-            // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
             rl.DrawModelEx(
-                car, 
+                car.model, 
                 car_pos,
                 rl.Vector3{ 0.0, 1.0, 0.0 }, 
                 0,
-                rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                rl.Vector3{ car.scaling_factor, car.scaling_factor, car.scaling_factor }, 
                 rl.RAYWHITE)
         }
 
