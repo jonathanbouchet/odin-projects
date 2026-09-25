@@ -21,7 +21,7 @@ CELL_WIDTH :: 4
 GRID_NUM_CELLS :: 36 // total number of cells
 // formula is i -> (i x 2)^2
 
-Tile_Input_Data2 :: struct {
+Tile_Input_Data :: struct {
     tile_path: []cstring,
     tile_name: []cstring,
     tile_id: []i32,
@@ -44,7 +44,7 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
     return data
 }
 
-Tile2 :: struct {
+Tile :: struct {
     id: i32, // unique id
     id_row: i32, // row id on the screen grid
     id_col: i32, // col id on the screen grid
@@ -57,7 +57,7 @@ Tile2 :: struct {
     scale_factor: f32
 }
 
-load_model :: proc(input_data: Tile_Input_Data2, data: ^[]rl.Model) {
+load_model :: proc(input_data: Tile_Input_Data, data: ^[]rl.Model) {
     texture := rl.LoadTexture(input_data.texture)
     rl.GenTextureMipmaps(&texture)
     rl.SetTextureFilter(texture, .TRILINEAR)
@@ -77,7 +77,7 @@ load_model :: proc(input_data: Tile_Input_Data2, data: ^[]rl.Model) {
     }
 }
 
-make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
+make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     // initialize a grid
     // ordering is from negative row -> positive row, negative col -> positive col
     // example for:
@@ -99,7 +99,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
             } else{
                 model_id = 2
             }
-            tile := Tile2{
+            tile := Tile{
                 id = counter,
                 id_row = i32(jj),
                 id_col = i32(ii),
@@ -117,7 +117,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
     }
 }
 
-draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2, models: ^[]rl.Model) {
+draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model) {
     for i in 0..<len(grid) {
         pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
         pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
@@ -157,16 +157,15 @@ main :: proc() {
     defer rl.CloseWindow()
 
     // read input data
-    map_data2 := read_input_data("map2.json", Tile_Input_Data2)
-    fmt.printfln("map data2: %v", map_data2)
+    map_data := read_input_data("map.json", Tile_Input_Data)
+    fmt.printfln("map data: %v", map_data)
 
-    max_models := i32(len(map_data2.tile_name))
-    models2 := make([]rl.Model, max_models)
-    defer delete(models2)
+    max_models := i32(len(map_data.tile_name))
+    models := make([]rl.Model, max_models)
+    defer delete(models)
 
-    load_model(map_data2, &models2)
+    load_model(map_data, &models)
 
-    // models: [3]rl.Model
     texture := rl.LoadTexture("assets/city_assets/texture/colorpaletteupdated.png")
     defer rl.UnloadTexture(texture)
     rl.GenTextureMipmaps(&texture)
@@ -186,8 +185,8 @@ main :: proc() {
     }
     rl.SetTargetFPS(TARGET_FPS)
 
-    grid2: [GRID_NUM_CELLS]Tile2
-    make_map(&grid2)
+    grid: [GRID_NUM_CELLS]Tile
+    make_map(&grid)
 
     imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
@@ -215,7 +214,7 @@ main :: proc() {
 
     // shaders
     shader := rl.LoadShader("shaders/basic.vs", "shaders/basic.fs")
-    for model in models2{
+    for model in models{
         for i in 0..<int(model.materialCount){
             model.materials[i].shader = shader
         }
@@ -262,10 +261,10 @@ main :: proc() {
             }
             gridX = i32(math.floor_f32(groundPosition.x / f32(tileSize)))
             gridZ = i32(math.floor_f32(groundPosition.z / f32(tileSize)))
-            for i in 0..<len(grid2) {
-                if gridX == grid2[i].id_col - GRID_SIZE && gridZ == grid2[i].id_row - GRID_SIZE {
+            for i in 0..<len(grid) {
+                if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
                     if rl.IsMouseButtonPressed(.LEFT) {
-                        grid2[i].status = true
+                        grid[i].status = true
                         fmt.printfln("mouse click at %v", rl.Vector2{f32(gridX), f32(gridZ)})
                     }
                 }
@@ -277,9 +276,7 @@ main :: proc() {
         }
 
         // call imgui
-        // imgui_display(mouse_pos, gridX, gridZ)
         imgui_display(mouse_pos, gridX, gridZ, &light_direction, &light_color, &ambient_color)
-        // fmt.printfln("light direction: %v", light_direction)
         update_shader_values(
             &light_direction, &light_color, &ambient_color,
             int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
@@ -299,10 +296,10 @@ main :: proc() {
         rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        draw_map(&grid2, &models2)
+        draw_map(&grid, &models)
         
         if spawn_car{
-            car_pos := rl.Vector3{f32( grid2[0].i + CELL_WIDTH/2), 0.3, f32(grid2[0].j + CELL_WIDTH/2) }
+            car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
             scaling_factor := f32(1.0 / 3.0)
             // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
             rl.DrawModelEx(
@@ -325,7 +322,7 @@ main :: proc() {
         rl.EndDrawing()
     }
     // unload models here
-    for i in 0..<len(models2){
-        defer rl.UnloadModel(models2[i])
+    for i in 0..<len(models){
+        defer rl.UnloadModel(models[i])
     }
 }
