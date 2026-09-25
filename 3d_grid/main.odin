@@ -76,7 +76,8 @@ Tile2 :: struct {
     status: bool, // placeholder: right now just flag if the mouse is clicked on this tile
     width: i32, // width of the tile ; this is not pixel
     height: i32, // height of the tile ; this is not pixel
-    model_id: i32
+    model_id: i32,
+    scale_factor: f32
 }
 
 load_model :: proc(input_data: Tile_Input_Data2, data: ^[]rl.Model) {
@@ -107,11 +108,11 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
             rng := rand.int32_range(0, 100)
             model_id: i32 
             if rng < 10{
-                model_id = 2 // water
+                model_id = 0 // water
             } else if rng < 20 {
                 model_id = 1 // sand
             } else{
-                model_id = 0
+                model_id = 2
             }
             tile := Tile2{
                 id = counter,
@@ -122,7 +123,8 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2) {
                 status = false,
                 width = i32(CELL_WIDTH),
                 height = i32(CELL_WIDTH),
-                model_id = model_id
+                model_id = model_id,
+                scale_factor = f32(1.0/3.0)
             }
             grid[counter] = tile
             counter += 1
@@ -135,13 +137,13 @@ draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile2, models: ^[]rl.Model) {
         pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
         pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
         
-        scaling_factor := f32(0.34) // cityassets scaling factor
+        // scaling_factor := f32(1.0/3.0) // cityassets scaling factor
         rl.DrawModelEx(
             models[grid[i].model_id],
             pos_model, 
             rl.Vector3{ 0.0, 1.0, 0.0 }, 
             0.0,
-            rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+            rl.Vector3{ grid[i].scale_factor, grid[i].scale_factor, grid[i].scale_factor }, 
             rl.RAYWHITE
         )
     }
@@ -252,6 +254,9 @@ main :: proc() {
         fmt.printfln("grid: %v", gr)
     }
 
+    grid2: [GRID_NUM_CELLS]Tile2
+    make_map(&grid2)
+
     imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
 
@@ -329,6 +334,7 @@ main :: proc() {
                 if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
                     if rl.IsMouseButtonPressed(.LEFT) {
                         grid[i].status = true
+                        fmt.printfln("mouse click at %v", rl.Vector2{f32(gridX), f32(gridZ)})
                     }
                 }
             }
@@ -361,40 +367,42 @@ main :: proc() {
         rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        for i in 0..<len(grid) {
+        draw_map(&grid2, &models2)
+        // for i in 0..<len(grid) {
 
-            pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
-            pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
+        //     pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
+        //     pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
             
-            if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
-                rl.DrawModel(model, pos, 1.0, grid[i].color_hit)
-            } else {
-                rl.DrawModel(model, pos, 1.0, grid[i].color)
-            }
-            // show the model if it has been selected
-            if grid[i].status {
-                scaling_factor := f32(0.34) // cityassets scaling factor
-                rl.DrawModelEx(
-                        models[map_data.tile_id[i]],
-                        pos_model, 
-                        rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                        map_data.tile_rotation_city[i],
-                        rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                        rl.RAYWHITE
-                )
-            }
-            if spawn_car{
-                car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
-                scaling_factor := f32(0.34)
-                // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
-                rl.DrawModelEx(
-                    car, 
-                    car_pos,
-                    rl.Vector3{ 0.0, 1.0, 0.0 }, 
-                    0,
-                    rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
-                    rl.RAYWHITE)
-            }
+        //     if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
+        //         rl.DrawModel(model, pos, 1.0, grid[i].color_hit)
+        //     } else {
+        //         rl.DrawModel(model, pos, 1.0, grid[i].color)
+        //     }
+        //     // show the model if it has been selected
+        //     if grid[i].status {
+        //         scaling_factor := f32(0.34) // cityassets scaling factor
+        //         rl.DrawModelEx(
+        //                 models[map_data.tile_id[i]],
+        //                 pos_model, 
+        //                 rl.Vector3{ 0.0, 1.0, 0.0 }, 
+        //                 map_data.tile_rotation_city[i],
+        //                 rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+        //                 rl.RAYWHITE
+        //         )
+        //     }
+        // }
+        
+        if spawn_car{
+            car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
+            scaling_factor := f32(0.34)
+            // scaling_factor := f32(CELL_WIDTH / GRID_SIZE) // citybits scaling factor
+            rl.DrawModelEx(
+                car, 
+                car_pos,
+                rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                0,
+                rl.Vector3{ scaling_factor, scaling_factor, scaling_factor }, 
+                rl.RAYWHITE)
         }
 
         rl.DrawGrid(10, CELL_WIDTH)

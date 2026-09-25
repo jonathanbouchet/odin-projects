@@ -1,7 +1,7 @@
 {
     "tile_path":[
         "assets/city_assets/GLB/water.glb",
-        "assets/city_assets/GLB/sand.glb",
+        "assets/city_assets/GLB/dirt.glb",
         "assets/city_assets/GLB/grass.glb",
         "assets/city_assets/GLB/house1.glb",
         "assets/city_assets/GLB/L_intersection.glb",
