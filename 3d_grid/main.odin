@@ -159,7 +159,7 @@ draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model, custom_shader
                 rl.Vector3{ 0.0, 1.0, 0.0 }, 
                 0.0,
                 rl.Vector3{ 1.0, 1.0, 1.0 }, 
-                rl.Color{0, 255, 0, 20}
+                rl.Color{255, 255, 0, 100}
             )
         }
     }
@@ -232,8 +232,8 @@ main :: proc() {
     defer rl.UnloadModel(car.model)
 
     // highlighted tile
-    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
-    defer rl.UnloadModel(model)
+    base_model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
+    defer rl.UnloadModel(base_model)
 
     spawn_car: bool
 
@@ -280,6 +280,18 @@ main :: proc() {
         int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
         shader)
 
+    // texture for UI icons - testing
+    road_straight_texture := rl.LoadTexture("assets/textures/road_straight_from_blender.png")
+    defer rl.UnloadTexture(road_straight_texture)
+    road_L_texture := rl.LoadTexture("assets/textures/road_L.png")
+    defer rl.UnloadTexture(road_L_texture)
+    grass_texture := rl.LoadTexture("assets/textures/grass_from_blender.png")
+    defer rl.UnloadTexture(grass_texture)
+    sand_texture := rl.LoadTexture("assets/textures/sand.png")
+    defer rl.UnloadTexture(sand_texture)
+    water_texture := rl.LoadTexture("assets/textures/water.png")
+    defer rl.UnloadTexture(water_texture)
+
     // Main game loop
     for !rl.WindowShouldClose() {
         // update 
@@ -290,7 +302,7 @@ main :: proc() {
         mouse_pos := rl.GetMousePosition()
         ray := rl.GetScreenToWorldRay(mouse_pos, camera)
         groundY := f32(0.0)
-
+// 
         // Ray: position + direction * t
         // Find t where the ray reaches y = groundY:
         // ray.position.y + ray.direction.y * t = groundY
@@ -341,7 +353,7 @@ main :: proc() {
         rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        draw_map(&grid, &models, custom_shader, model)
+        draw_map(&grid, &models, custom_shader, base_model)
         
         if spawn_car{
             car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
@@ -361,6 +373,13 @@ main :: proc() {
 
         imgui.Render()
 		rlimgui.render_draw_data(imgui.GetDrawData())
+
+        // draw UI icons OUTSIDE mode3D
+        rl.DrawTextureEx(road_straight_texture, rl.Vector2{10, 10}, 0.0, 0.05, rl.RAYWHITE)
+        rl.DrawTextureEx(road_L_texture, rl.Vector2{80, 10}, 0.0, 0.05, rl.RAYWHITE)
+        rl.DrawTextureEx(grass_texture, rl.Vector2{150, 10}, 0.0, 0.05, rl.RAYWHITE)
+        rl.DrawTextureEx(sand_texture, rl.Vector2{220, 10}, 0.0, 0.05, rl.RAYWHITE)
+        rl.DrawTextureEx(water_texture, rl.Vector2{290, 10}, 0.0, 0.05, rl.RAYWHITE)
 
         rl.EndDrawing()
     }
