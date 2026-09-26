@@ -13,7 +13,7 @@ import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 SCREEN_WIDTH :: 1000
-SCREEN_HEIGHT :: 1000
+SCREEN_HEIGHT :: 800
 TARGET_FPS :: 60
 
 GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
@@ -139,7 +139,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     }
 }
 
-draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model, custom_shader: rl.Shader, highlighted_model: rl.Model) {
+draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model, highlighted_model: rl.Model) {
     for i in 0..<len(grid) {
         pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
         pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
@@ -248,19 +248,6 @@ main :: proc() {
             model.materials[i].shader = shader
         }
     }
-    custom_shader := rl.LoadShader(nil, "shaders/highlight.fs")
-    defer rl.UnloadShader(custom_shader)
-
-    // 3. Look up the uniform location for our tint vector
-    col_mod_loc := rl.GetShaderLocation(custom_shader, "colMod")
-
-    // 4. Map raylib's internal texture sampler location to our GLSL "albedoMap" uniform
-    custom_shader.locs[rl.ShaderLocationIndex.MAP_ALBEDO] = rl.GetShaderLocation(custom_shader, "albedoMap")
-
-    // 5. Send data to the shader uniform
-    // A target tint color (e.g., Red: 1.0, Green: 0.3, Blue: 0.3, Alpha: 1.0)
-    tint_color := rl.Vector4{1.0, 0.3, 0.3, 1.0}
-    rl.SetShaderValue(custom_shader, col_mod_loc, &tint_color, rl.ShaderUniformDataType.VEC4)
 
     // car
     for i in 0..<car.model.materialCount{
@@ -353,7 +340,7 @@ main :: proc() {
         rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        draw_map(&grid, &models, custom_shader, base_model)
+        draw_map(&grid, &models, base_model)
         
         if spawn_car{
             car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
