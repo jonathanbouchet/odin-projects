@@ -6,6 +6,7 @@ import "core:fmt"
 import "core:mem"
 import "core:math"
 import "core:math/rand"
+import "core:slice"
 import rl "vendor:raylib"
 
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
@@ -15,10 +16,10 @@ SCREEN_WIDTH :: 1000
 SCREEN_HEIGHT :: 1000
 TARGET_FPS :: 60
 
-GRID_SIZE :: 3 // should be even for a symetric grid around (0,0)
+GRID_SIZE :: 2 // should be even for a symetric grid around (0,0)
 // 5 means a grid of 10 x 10, ie 5 on the positive X, 5 on the negative  ; same for Z
 CELL_WIDTH :: 4
-GRID_NUM_CELLS :: 36 // total number of cells
+GRID_NUM_CELLS :: 16 // total number of cells
 // formula is i -> (i x 2)^2
 
 Tile_Input_Data :: struct {
@@ -126,7 +127,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
                 id_col = i32(ii),
                 i = i32(-CELL_WIDTH * GRID_SIZE + ii*CELL_WIDTH),
                 j = i32(-CELL_WIDTH * GRID_SIZE + jj*CELL_WIDTH),
-                status = false if model_id == 0 else true,
+                status = false,//false if model_id == 0 else true,
                 width = i32(CELL_WIDTH),
                 height = i32(CELL_WIDTH),
                 model_id = model_id,
@@ -138,7 +139,7 @@ make_map :: proc(grid: ^[GRID_NUM_CELLS]Tile) {
     }
 }
 
-draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model) {
+draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model, custom_shader: rl.Shader, highlighted_model: rl.Model) {
     for i in 0..<len(grid) {
         pos_model := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
         pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), -0.01, f32(grid[i].j + CELL_WIDTH/2) }
@@ -150,6 +151,17 @@ draw_map :: proc(grid: ^[GRID_NUM_CELLS]Tile, models: ^[]rl.Model) {
             rl.Vector3{ grid[i].scale_factor, grid[i].scale_factor, grid[i].scale_factor }, 
             rl.RAYWHITE
         )
+        if grid[i].status == true {
+            tmp_pos := rl.Vector3{f32( grid[i].i + CELL_WIDTH/2), 0.1, f32(grid[i].j + CELL_WIDTH/2) }
+            rl.DrawModelEx(
+                highlighted_model,
+                tmp_pos, 
+                rl.Vector3{ 0.0, 1.0, 0.0 }, 
+                0.0,
+                rl.Vector3{ 1.0, 1.0, 1.0 }, 
+                rl.Color{0, 255, 0, 20}
+            )
+        }
     }
 }
 
@@ -219,6 +231,10 @@ main :: proc() {
     car := load_car(map_data)
     defer rl.UnloadModel(car.model)
 
+    // highlighted tile
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(CELL_WIDTH, 0.01, CELL_WIDTH))
+    defer rl.UnloadModel(model)
+
     spawn_car: bool
 
     tileSize := CELL_WIDTH
@@ -232,6 +248,20 @@ main :: proc() {
             model.materials[i].shader = shader
         }
     }
+    custom_shader := rl.LoadShader(nil, "shaders/highlight.fs")
+    defer rl.UnloadShader(custom_shader)
+
+    // 3. Look up the uniform location for our tint vector
+    col_mod_loc := rl.GetShaderLocation(custom_shader, "colMod")
+
+    // 4. Map raylib's internal texture sampler location to our GLSL "albedoMap" uniform
+    custom_shader.locs[rl.ShaderLocationIndex.MAP_ALBEDO] = rl.GetShaderLocation(custom_shader, "albedoMap")
+
+    // 5. Send data to the shader uniform
+    // A target tint color (e.g., Red: 1.0, Green: 0.3, Blue: 0.3, Alpha: 1.0)
+    tint_color := rl.Vector4{1.0, 0.3, 0.3, 1.0}
+    rl.SetShaderValue(custom_shader, col_mod_loc, &tint_color, rl.ShaderUniformDataType.VEC4)
+
     // car
     for i in 0..<car.model.materialCount{
         car.model.materials[i].shader = shader
@@ -276,10 +306,13 @@ main :: proc() {
             gridZ = i32(math.floor_f32(groundPosition.z / f32(tileSize)))
             for i in 0..<len(grid) {
                 if gridX == grid[i].id_col - GRID_SIZE && gridZ == grid[i].id_row - GRID_SIZE {
+                    grid[i].status = true
                     if rl.IsMouseButtonPressed(.LEFT) {
-                        grid[i].status = true
+                        // grid[i].status = true
                         fmt.printfln("mouse click at %v", rl.Vector2{f32(gridX), f32(gridZ)})
                     }
+                } else{
+                    grid[i].status = false
                 }
             }
         }
@@ -308,7 +341,7 @@ main :: proc() {
         rl.ClearBackground(rl.Color{ 20, 20, 20, 255 })
 
         rl.BeginMode3D(camera)
-        draw_map(&grid, &models)
+        draw_map(&grid, &models, custom_shader, model)
         
         if spawn_car{
             car_pos := rl.Vector3{f32( grid[0].i + CELL_WIDTH/2), 0.3, f32(grid[0].j + CELL_WIDTH/2) }
