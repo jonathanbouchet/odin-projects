@@ -12,3 +12,26 @@ odin build . -debug -json-errors -show-timings -vet
 # LLVM API Code Gen (   61 modules ) -   126.140 ms -  30.09%
 # lld-link                           -   216.337 ms -  51.60%
 ```
+
+## docs
+```bash
+odin doc .
+```
+
+## update version
+```bash
+git lfs install  
+brew install git-lfs 
+git lfs pull 
+file vendor/raylib/macos/libraylib.a 
+lipo -info vendor/raylib/macos/libraylib.a  
+odin version
+```
+
+## Documentation I found useful
+- Odin official overview: https://odin-lang.org/docs/overview/
+- sage-code tutorial: https://odin-lang.org/docs/overview/
+- intro (Sjoerd Wouters): https://sjoerdev.github.io/posts/odin-guide/
+- SDL in Odin: https://www.youtube.com/playlist?list=PLO02jwa2ZaiDY7kVImqZUHDiuomsl7OdA
+- OpenGL in Odin: https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
+- KArl Zylinski's webpage: https://zylinski.se/
