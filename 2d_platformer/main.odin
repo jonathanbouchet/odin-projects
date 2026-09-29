@@ -4,6 +4,7 @@ import "core:os"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
+import "core:math"
 import "core:encoding/json"
 import rl "vendor:raylib"
 
@@ -70,8 +71,6 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
 draw_background :: proc (texture: rl.Texture) {
     x := i32(0)
     y := i32(5)
-    // x := i32(16)
-    // y := i32(6)
     source_rect := rl.Rectangle{f32(x * TILE_WIDTH), f32(y * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
     for i in 0..<NUM_TILE_X {
         for j in 0..<NUM_TILE_Y {
@@ -94,8 +93,40 @@ draw_background :: proc (texture: rl.Texture) {
     }
 }
 
-draw_props :: proc (texture: rl.Texture, map_data: ^Map_Data) {
+draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer) {
+    x: f32
+    y: f32
+    i: f32
+    j: f32
+    tile_value: i32
+    for tile_id in 0..<len(layer.data) {
+        if layer.data[tile_id] > 0 {
+            tile_value = layer.data[tile_id]
+            y = math.floor_f32(f32(tile_value) / NUM_TILE_X)
+            x = f32(tile_value - 1) - f32(y*NUM_TILE_X)
+            source_rect := rl.Rectangle{f32(x * TILE_WIDTH), f32(y * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
 
+            j = math.floor_f32(f32(tile_id) / NUM_TILE_X)
+            i = f32(tile_id % NUM_TILE_X)
+
+            // fmt.printfln("tile_id: %v, tile_value: %v, x: %v, y: %v, i: %v, j: %v", tile_id, tile_value, x,y,i,j)
+
+            dest_rect := rl.Rectangle{
+                    f32(i*TILE_WIDTH), 
+                    f32(j*TILE_WIDTH), 
+                    TILE_WIDTH, 
+                    TILE_WIDTH
+                } 
+            rl.DrawTexturePro(
+                texture, 
+                source_rect, 
+                dest_rect, 
+                rl.Vector2{0, 0}, 
+                0.0, 
+                rl.RAYWHITE
+            )
+        }
+    }
 }
 
 draw_debug :: proc() {
@@ -118,26 +149,58 @@ main :: proc(){
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
-    fmt.printfln("map data: %v", map_data.layers[:])
+    // fmt.printfln("map data: %v", map_data.layers[:])
 
     // test filtering
-    props_layer:= slice.filter(map_data.layers[:], proc(layer: Texture_Layer) -> bool {
-        return layer.id == 2 
-    })
+    // props_layer:= slice.filter(map_data.layers[:], proc(layer: Texture_Layer) -> bool {
+    //     return layer.id == 2 
+    // })
+    // fmt.printfln("props layer: %v", props_layer)
+    // fmt.println(typeid_of(type_of(props_layer))) 
+    // defer delete(props_layer)
 
-    fmt.printfln("props_layer: %v", props_layer)
+    // another to filter the slice
+    // advantage: avoids allocating a new array
+    background_layer: ^Texture_Layer = nil
+    platform_layer: ^Texture_Layer = nil
+    props_layer: ^Texture_Layer = nil
 
-    defer delete(props_layer)
+    for &layer in map_data.layers {
+        if layer.id == 3 {
+            background_layer = &layer
+            break
+        }
+    }
+
+    if background_layer != nil {
+        fmt.println("Found layer:", background_layer.name)
+    }
+
+    for &layer in map_data.layers {
+        if layer.id == 2 {
+            platform_layer = &layer
+            break
+        }
+    }
+    if platform_layer != nil {
+        fmt.println("Found layer:", platform_layer.name)
+    }
+
+    for &layer in map_data.layers {
+        if layer.id == 1 {
+            props_layer = &layer
+            break
+        }
+    }
+    if props_layer != nil {
+        fmt.println("Found layer:", props_layer.name)
+    }
+
+    fmt.printfln("platform layer: %v", platform_layer)
+    fmt.println(typeid_of(type_of(platform_layer))) 
 
     texture := rl.LoadTexture("assets/tilemap.png")
     defer rl.UnloadTexture(texture)
-    // testing slicing the texture map
-    i := i32(0) // col
-    j := i32(5) // row
-    // from background layer, all tileID are 28
-    // row 0 : 1 -> 20
-    // row 1 : 21 -> 28
-    // means j = 1, i = 7 to get id = 28
 
     for !rl.WindowShouldClose(){
         // logic
@@ -147,20 +210,12 @@ main :: proc(){
         //render
         rl.BeginDrawing()
         rl.ClearBackground(COLOR)
-        draw_background(texture)
-        draw_props(texture, &map_data)
-        // coordinate on the texture map
-        // source_rect := rl.Rectangle{f32(i * TILE_WIDTH), f32(j * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
-        // // center of the screen
-        // dest_rect := rl.Rectangle{WIDTH/2 - TILE_WIDTH/2, HEIGHT/2 - TILE_WIDTH/2, TILE_WIDTH, TILE_WIDTH} 
-        // rl.DrawTexturePro(
-        //     texture, 
-        //     source_rect, 
-        //     dest_rect, 
-        //     rl.Vector2{0, 0}, 
-        //     0.0, 
-        //     rl.RAYWHITE
-        // )
+
+        // draw_background(texture)
+        draw_layer(texture, background_layer)
+        draw_layer(texture, platform_layer)
+        draw_layer(texture, props_layer)
+
         draw_debug()
         rl.EndDrawing()
     }

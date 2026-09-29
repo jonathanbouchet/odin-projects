@@ -18,3 +18,7 @@ Current map in Tiled is:
 - Tiled app when masking one or several layers in the editor
 
 <img src="pictures/tiled_1.png" alt="" width="700">
+
+## After decoding
+
+<img src="pictures/tiled_2.png" alt="" width="700">
