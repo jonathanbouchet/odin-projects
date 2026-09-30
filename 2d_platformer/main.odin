@@ -68,6 +68,17 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
     return data
 }
 
+extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
+    current_layer: ^Texture_Layer = nil
+    for &layer in data.layers {
+        if layer.id == layer_id {
+            current_layer = &layer
+            break
+        }
+    }
+    return current_layer
+}
+
 draw_background :: proc (texture: rl.Texture) {
     x := i32(0)
     y := i32(5)
@@ -129,6 +140,35 @@ draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer) {
     }
 }
 
+draw_collision_layer :: proc (layer: ^Texture_Layer) {
+    // the collision layer has been created using an empty tile from the timemap
+    // i.e there's no texture
+    // only useful information is the LOCATION of the tile
+    x: f32
+    y: f32
+    i: f32
+    j: f32
+    tile_value: i32
+    for tile_id in 0..<len(layer.data) {
+        if layer.data[tile_id] > 0 {
+            tile_value = layer.data[tile_id]
+            y = math.floor_f32(f32(tile_value) / NUM_TILE_X)
+            x = f32(tile_value - 1) - f32(y*NUM_TILE_X)
+
+            j = math.floor_f32(f32(tile_id) / NUM_TILE_X)
+            i = f32(tile_id % NUM_TILE_X)
+
+            dest_rect := rl.Rectangle{
+                    f32(i*TILE_WIDTH), 
+                    f32(j*TILE_WIDTH), 
+                    TILE_WIDTH, 
+                    TILE_WIDTH
+                } 
+            rl.DrawRectangleLines(i32(dest_rect.x), i32(dest_rect.y), TILE_WIDTH, TILE_WIDTH, rl.RED)
+        }
+    }
+}
+
 draw_debug :: proc() {
     rl.DrawFPS(0, 0)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.Color{57, 255, 20, 255})
@@ -164,36 +204,27 @@ main :: proc(){
     background_layer: ^Texture_Layer = nil
     platform_layer: ^Texture_Layer = nil
     props_layer: ^Texture_Layer = nil
+    collision_layer: ^Texture_Layer = nil
 
-    for &layer in map_data.layers {
-        if layer.id == 3 {
-            background_layer = &layer
-            break
-        }
-    }
+    background_layer = extract_layer_data(map_data, 3)
+    platform_layer = extract_layer_data(map_data, 2)
+    props_layer = extract_layer_data(map_data, 1)
+    collision_layer = extract_layer_data(map_data, 6)
 
     if background_layer != nil {
         fmt.println("Found layer:", background_layer.name)
     }
 
-    for &layer in map_data.layers {
-        if layer.id == 2 {
-            platform_layer = &layer
-            break
-        }
-    }
     if platform_layer != nil {
         fmt.println("Found layer:", platform_layer.name)
     }
 
-    for &layer in map_data.layers {
-        if layer.id == 1 {
-            props_layer = &layer
-            break
-        }
-    }
     if props_layer != nil {
         fmt.println("Found layer:", props_layer.name)
+    }
+
+    if collision_layer != nil {
+        fmt.println("Found layer:", collision_layer.name)
     }
 
     fmt.printfln("platform layer: %v", platform_layer)
@@ -215,6 +246,7 @@ main :: proc(){
         draw_layer(texture, background_layer)
         draw_layer(texture, platform_layer)
         draw_layer(texture, props_layer)
+        draw_collision_layer(collision_layer)
 
         draw_debug()
         rl.EndDrawing()

@@ -22,3 +22,10 @@ Current map in Tiled is:
 ## After decoding
 
 <img src="pictures/tiled_2.png" alt="" width="700">
+
+### Adding the collision layer debug
+
+- the collision layer has been created using an empty tile from the timemap, i.e there's no texture
+- only useful information is the LOCATION of the tile
+
+<img src="pictures/tiled_3.png" alt="" width="700">
