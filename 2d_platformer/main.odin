@@ -104,7 +104,7 @@ draw_background :: proc (texture: rl.Texture) {
     }
 }
 
-draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer) {
+draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer, is_collision: bool) {
     x: f32
     y: f32
     i: f32
@@ -128,43 +128,18 @@ draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer) {
                     TILE_WIDTH, 
                     TILE_WIDTH
                 } 
-            rl.DrawTexturePro(
-                texture, 
-                source_rect, 
-                dest_rect, 
-                rl.Vector2{0, 0}, 
-                0.0, 
-                rl.RAYWHITE
-            )
-        }
-    }
-}
-
-draw_collision_layer :: proc (layer: ^Texture_Layer) {
-    // the collision layer has been created using an empty tile from the timemap
-    // i.e there's no texture
-    // only useful information is the LOCATION of the tile
-    x: f32
-    y: f32
-    i: f32
-    j: f32
-    tile_value: i32
-    for tile_id in 0..<len(layer.data) {
-        if layer.data[tile_id] > 0 {
-            tile_value = layer.data[tile_id]
-            y = math.floor_f32(f32(tile_value) / NUM_TILE_X)
-            x = f32(tile_value - 1) - f32(y*NUM_TILE_X)
-
-            j = math.floor_f32(f32(tile_id) / NUM_TILE_X)
-            i = f32(tile_id % NUM_TILE_X)
-
-            dest_rect := rl.Rectangle{
-                    f32(i*TILE_WIDTH), 
-                    f32(j*TILE_WIDTH), 
-                    TILE_WIDTH, 
-                    TILE_WIDTH
-                } 
-            rl.DrawRectangleLines(i32(dest_rect.x), i32(dest_rect.y), TILE_WIDTH, TILE_WIDTH, rl.RED)
+            if is_collision {
+                rl.DrawRectangleLines(i32(dest_rect.x), i32(dest_rect.y), TILE_WIDTH, TILE_WIDTH, rl.RED)
+            } else {
+                rl.DrawTexturePro(
+                    texture, 
+                    source_rect, 
+                    dest_rect, 
+                    rl.Vector2{0, 0}, 
+                    0.0, 
+                    rl.RAYWHITE
+                )
+            }
         }
     }
 }
@@ -243,10 +218,10 @@ main :: proc(){
         rl.ClearBackground(COLOR)
 
         // draw_background(texture)
-        draw_layer(texture, background_layer)
-        draw_layer(texture, platform_layer)
-        draw_layer(texture, props_layer)
-        draw_collision_layer(collision_layer)
+        draw_layer(texture, background_layer, false)
+        draw_layer(texture, platform_layer, false)
+        draw_layer(texture, props_layer, false)
+        draw_layer(texture, collision_layer, true)
 
         draw_debug()
         rl.EndDrawing()
