@@ -208,10 +208,21 @@ main :: proc(){
     texture := rl.LoadTexture("assets/tilemap.png")
     defer rl.UnloadTexture(texture)
 
+    // player
+    player := Player{
+        position = rl.Vector2{f32(WIDTH/2), f32(100)},
+        velocity = rl.Vector2{0, 0},
+        rotation = 0.0,
+        width = f32(32),
+        height = f32(32),
+        color = rl.Color{ 0, 0, 28, 255 }
+    }
+
     for !rl.WindowShouldClose(){
         // logic
 
         // update
+        update_player(&player)
 
         //render
         rl.BeginDrawing()
@@ -222,6 +233,7 @@ main :: proc(){
         draw_layer(texture, platform_layer, false)
         draw_layer(texture, props_layer, false)
         draw_layer(texture, collision_layer, true)
+        draw_player(player)
 
         draw_debug()
         rl.EndDrawing()
