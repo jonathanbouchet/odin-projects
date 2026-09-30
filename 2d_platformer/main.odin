@@ -97,19 +97,20 @@ main :: proc(){
 
     // player
     player := Player{
-        position = rl.Vector2{f32(WIDTH/2), f32(100)},
+        position = rl.Vector2{f32(150), f32(100)},
         velocity = rl.Vector2{0, 0},
         rotation = 0.0,
         width = f32(32),
         height = f32(32),
-        color = rl.Color{ 0, 0, 28, 255 }
+        color = rl.Color{ 0, 0, 28, 255 },
+        grounded = false
     }
 
     for !rl.WindowShouldClose(){
         // logic
 
         // update
-        update_player(&player)
+        update_player(&player, collision_layer)
 
         //render
         rl.BeginDrawing()
