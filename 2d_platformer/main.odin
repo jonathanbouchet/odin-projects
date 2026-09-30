@@ -1,11 +1,9 @@
 package main
 
-import "core:os"
 import "core:fmt"
 import "core:mem"
 import "core:slice"
 import "core:math"
-import "core:encoding/json"
 import rl "vendor:raylib"
 
 WIDTH :: 640
@@ -30,117 +28,6 @@ show_memory :: proc() {
             fmt.eprintf("%v bad free\n", entry.location)
         }
         mem.tracking_allocator_destroy(&track)
-    }
-}
-
-Texture_Layer :: struct {
-    id: i32,
-    data: [NUM_TILE_X * NUM_TILE_Y]i32,
-    height: i32,
-    width: i32,
-    name: string
-}
-
-Map_Data :: struct {
-    layers: [dynamic]Texture_Layer,
-    tileheight: i32,
-    tilewidth: i32,
-    width: i32,
-    height: i32
-}
-
-read_input_data :: proc(filepath: string, $T: typeid) -> T {
-    // as a temporary allocation, use the temp_allocator
-    input_data, ok := os.read_entire_file(filepath, context.temp_allocator)
-    if ok != nil {
-        fmt.eprintln("Failed to read file.")
-        return T{}
-	}
-    // deleting the memory allocated to read the file
-    defer free_all(context.temp_allocator)
-
-	data: T
-	err := json.unmarshal(input_data, &data)
-	if err != nil {
-		fmt.eprintln("Parsing error:", err)
-        return T{}
-	}
-    return data
-}
-
-extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
-    current_layer: ^Texture_Layer = nil
-    for &layer in data.layers {
-        if layer.id == layer_id {
-            current_layer = &layer
-            break
-        }
-    }
-    return current_layer
-}
-
-draw_background :: proc (texture: rl.Texture) {
-    x := i32(0)
-    y := i32(5)
-    source_rect := rl.Rectangle{f32(x * TILE_WIDTH), f32(y * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
-    for i in 0..<NUM_TILE_X {
-        for j in 0..<NUM_TILE_Y {
-            // center of the screen
-            dest_rect := rl.Rectangle{
-                f32(i*TILE_WIDTH), 
-                f32(j*TILE_WIDTH), 
-                TILE_WIDTH, 
-                TILE_WIDTH
-            } 
-            rl.DrawTexturePro(
-                texture, 
-                source_rect, 
-                dest_rect, 
-                rl.Vector2{0, 0}, 
-                0.0, 
-                rl.RAYWHITE
-            )
-        }
-    }
-}
-
-draw_layer :: proc (texture: rl.Texture, layer: ^Texture_Layer, is_collision: bool) {
-    x: f32
-    y: f32
-    i: f32
-    j: f32
-    tile_value: i32
-    for tile_id in 0..<len(layer.data) {
-        if layer.data[tile_id] > 0 {
-            tile_value = layer.data[tile_id]
-            y = math.floor_f32(f32(tile_value) / NUM_TILE_X)
-            x = f32(tile_value - 1) - f32(y*NUM_TILE_X)
-            source_rect := rl.Rectangle{f32(x * TILE_WIDTH), f32(y * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
-
-            j = math.floor_f32(f32(tile_id) / NUM_TILE_X)
-            i = f32(tile_id % NUM_TILE_X)
-
-            // fmt.printfln("tile_id: %v, tile_value: %v, x: %v, y: %v, i: %v, j: %v", tile_id, tile_value, x,y,i,j)
-
-            dest_rect := rl.Rectangle{
-                    f32(i*TILE_WIDTH), 
-                    f32(j*TILE_WIDTH), 
-                    TILE_WIDTH, 
-                    TILE_WIDTH
-                } 
-            if is_collision {
-                rl.DrawRectangleLines(i32(dest_rect.x), i32(dest_rect.y), TILE_WIDTH, TILE_WIDTH, rl.RED)
-            } else {
-                rl.DrawTexturePro(
-                    texture, 
-                    source_rect, 
-                    dest_rect, 
-                    rl.Vector2{0, 0}, 
-                    0.0, 
-                    rl.RAYWHITE
-                )
-            }
-        }
     }
 }
 
