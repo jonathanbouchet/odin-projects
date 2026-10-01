@@ -31,8 +31,12 @@ show_memory :: proc() {
     }
 }
 
-draw_debug :: proc() {
+draw_debug :: proc(player: Player) {
     rl.DrawFPS(0, 0)
+    player_pos_text := fmt.ctprintf("X: %v Y: %v", player.position.x, player.position.y)
+    rl.DrawText(player_pos_text, 0, 20, 20, rl.GREEN)
+    player_vel_text := fmt.ctprintf("VX: %v, VY:%v", player.velocity.x, player.velocity.y)
+    rl.DrawText(player_vel_text, 0, 40, 20, rl.GREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.Color{57, 255, 20, 255})
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.Color{57, 255, 20, 255})
 }
@@ -101,7 +105,7 @@ main :: proc(){
         velocity = rl.Vector2{0, 0},
         rotation = 0.0,
         width = f32(32),
-        height = f32(32),
+        height = f32(16),
         color = rl.Color{ 0, 0, 28, 255 },
         grounded = false
     }
@@ -123,7 +127,7 @@ main :: proc(){
         draw_layer(texture, collision_layer, true)
         draw_player(player)
 
-        draw_debug()
+        draw_debug(player)
         rl.EndDrawing()
     }
 

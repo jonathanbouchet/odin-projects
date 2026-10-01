@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
@@ -32,16 +33,18 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
         player.velocity.x = 0
     }
 
+    // apply gravity
+    player.velocity.y += gravity * dt
+
     // jump
     if player.grounded && rl.IsKeyPressed(.SPACE){
-        player.velocity.y = -200
+        player.velocity.y = -300
     }
 
-    player.velocity.y += gravity * dt
     player.position += player.velocity * dt
 
     // check collisions
-    player_rect := rl.Rectangle{player.position.x, player.position.y, player.width, player.height}
+    // player_rect := rl.Rectangle{player.position.x, player.position.y, player.width, player.height}
     for tile_id in 0..<len(collision_layer.data) {
         if collision_layer.data[tile_id] > 0 {
             tile_value = collision_layer.data[tile_id]
@@ -57,11 +60,19 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
                     TILE_WIDTH, 
                     TILE_WIDTH
                 }
+            // a more accurate player position (?)
+            player_rect := rl.Rectangle{player.position.x, player.position.y, player.width, player.height}
             
-            if rl.CheckCollisionRecs(player_rect, dest_rect) && player.velocity.y > 0{
-                if player_rect.y < dest_rect.y{
-                    player.position.y = dest_rect.y - dest_rect.height
-                    player.grounded = true
+            if rl.CheckCollisionRecs(player_rect, dest_rect) && player.velocity.y !=0 { //} && player.velocity.y > 0{
+                fmt.printfln("player vx: %v, vy:%v", player.velocity.x, player.velocity.y)
+                if player.velocity.y < 0 {
+                    player.position.y = dest_rect.y + dest_rect.height
+                    player.velocity.y = 0
+                    player.grounded = false
+                } else if player.velocity.y > 0 {
+                        player.position.y = dest_rect.y - player_rect.height
+                        player.velocity.y = 0 // if not, player_vel.y still accumulates and it might go through the tile
+                        player.grounded = true
                 }
             }
         }
