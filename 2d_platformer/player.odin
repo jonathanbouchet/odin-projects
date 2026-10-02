@@ -17,7 +17,27 @@ Player :: struct {
     was_grounded: bool
 }
 
+get_player_rect :: proc (player: ^Player) -> rl.Rectangle {
+    // return a Rectangle based on player current position
+    return rl.Rectangle {
+            player.position.x,
+            player.position.y,
+            player.width,
+            player.height,
+        }
+}
+
 update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
+    /*
+    - update the position of the player
+    - used Euler integration :
+        velocity += acceleration * dt
+        position += velocity * dt
+    - first got input from KB for left/right or jump
+    - then gravity is applied
+    - position is then updated
+    - finally collisions are checked
+    */
     x: f32
     y: f32
     i: f32
@@ -52,7 +72,6 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
     // Move vertically.
     player.position.y += player.velocity.y * dt
     resolve_collision(player, collision_layer, .Y)
-
     }
 
 draw_player :: proc (player: Player) {

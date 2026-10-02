@@ -31,7 +31,8 @@ show_memory :: proc() {
     }
 }
 
-draw_debug :: proc(player: Player) {
+draw_debug :: proc(player: ^Player) {
+    // various debugging hints
     rl.DrawFPS(0, 0)
     player_pos_text := fmt.ctprintf("X: %v Y: %v", player.position.x, player.position.y)
     rl.DrawText(player_pos_text, 0, 20, 20, rl.DARKGREEN)
@@ -40,12 +41,7 @@ draw_debug :: proc(player: Player) {
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.Color{57, 255, 20, 255})
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.Color{57, 255, 20, 255})
 
-    player_rect := rl.Rectangle{
-        player.position.x,
-        player.position.y,
-        player.width,
-        player.height,
-    }
+    player_rect := get_player_rect(player)
 
     min_x := max(0, i32(math.floor_f32(player_rect.x / TILE_WIDTH)))
     min_y := max(0, i32(math.floor_f32(player_rect.y / TILE_WIDTH)))
@@ -64,14 +60,11 @@ draw_debug :: proc(player: Player) {
     rl.DrawText(player_neighbor_tile_X_text, 0, 60, 20, rl.DARKGREEN)
     player_neighbor_tile_Y_text := fmt.ctprintf("Y min: %v Y max: %v", min_y, max_y)
     rl.DrawText(player_neighbor_tile_Y_text, 0, 80, 20, rl.DARKGREEN)
-
-
 }
 
 main :: proc(){
     show_memory()
     // raylib initialization
-    // rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, "2d platform")
     rl.SetTargetFPS(TARGET_FPS)
     defer rl.CloseWindow()
@@ -153,9 +146,7 @@ main :: proc(){
         draw_layer(texture, props_layer, false)
         draw_layer(texture, collision_layer, true)
         draw_player(player)
-        draw_debug(player)
+        draw_debug(&player)
         rl.EndDrawing()
     }
-
-
 }

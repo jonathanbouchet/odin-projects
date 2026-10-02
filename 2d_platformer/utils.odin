@@ -9,12 +9,12 @@ Axis :: enum {
 }
 
 resolve_collision :: proc (player: ^Player, collision_layer: ^Texture_Layer, axis: Axis) {
-    player_rect := rl.Rectangle{
-            player.position.x,
-            player.position.y,
-            player.width,
-            player.height,
-        }
+    /*
+    - method to check lateral and vertical collisions between the player and the tiles form the collision layer
+    - only the neightboring tiles are checked, no need to check all of them
+    - thus, the loop is not over the full collision.data but now it's a double loop over X and Y neightbors
+    */
+    player_rect := get_player_rect(player)
     
     min_x := max(0, i32(math.floor_f32(player_rect.x / TILE_WIDTH)))
     min_y := max(0, i32(math.floor_f32(player_rect.y / TILE_WIDTH)))
@@ -46,12 +46,7 @@ resolve_collision :: proc (player: ^Player, collision_layer: ^Texture_Layer, axi
                 TILE_WIDTH,
             }
 
-            player_rect := rl.Rectangle{
-                player.position.x,
-                player.position.y,
-                player.width,
-                player.height,
-            }
+            player_rect := get_player_rect(player)
 
             // quick abort if there's no collisions
             if !rl.CheckCollisionRecs(player_rect, tile_rect) {
