@@ -13,7 +13,8 @@ Player :: struct {
     width: f32,
     height: f32,
     color: rl.Color,
-    grounded: bool
+    grounded: bool,
+    was_grounded: bool
 }
 
 update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
@@ -24,6 +25,9 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
     tile_value: i32
 
     dt := rl.GetFrameTime()
+    // Grounded must be recalculated every frame.
+    player.was_grounded = player.grounded
+    player.grounded = false
 
     if rl.IsKeyDown(.LEFT) {
         player.velocity.x = -200
@@ -33,15 +37,54 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
         player.velocity.x = 0
     }
 
+    // jump
+    if player.was_grounded && rl.IsKeyPressed(.SPACE){
+        player.velocity.y = -250
+    }
+
     // apply gravity
     player.velocity.y += gravity * dt
 
-    // jump
-    if player.grounded && rl.IsKeyPressed(.SPACE){
-        player.velocity.y = -300
+    // Move horizontally first.
+    player.position.x += player.velocity.x * dt
+
+    for tile_id in 0..<len(collision_layer.data) {
+        if collision_layer.data[tile_id] <= 0 {
+            continue
+        }
+
+        tile_x := f32(tile_id % NUM_TILE_X)
+        tile_y := f32(tile_id / NUM_TILE_X)
+
+        tile_rect := rl.Rectangle{
+            tile_x * TILE_WIDTH,
+            tile_y * TILE_WIDTH,
+            TILE_WIDTH,
+            TILE_WIDTH,
+        }
+
+        player_rect := rl.Rectangle{
+            player.position.x,
+            player.position.y,
+            player.width,
+            player.height,
+        }
+
+        if rl.CheckCollisionRecs(player_rect, tile_rect) {
+            if player.velocity.x > 0 {
+                // Moving right: place player's right edge at tile's left edge.
+                player.position.x = tile_rect.x - player.width
+            } else if player.velocity.x < 0 {
+                // Moving left: place player's left edge at tile's right edge.
+                player.position.x = tile_rect.x + tile_rect.width
+            }
+
+            player.velocity.x = 0
+        }
     }
 
-    player.position += player.velocity * dt
+    // Move vertically.
+    player.position.y += player.velocity.y * dt
 
     // check collisions
     // player_rect := rl.Rectangle{player.position.x, player.position.y, player.width, player.height}
@@ -63,17 +106,16 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
             // a more accurate player position (?)
             player_rect := rl.Rectangle{player.position.x, player.position.y, player.width, player.height}
             
-            if rl.CheckCollisionRecs(player_rect, dest_rect) && player.velocity.y !=0 { //} && player.velocity.y > 0{
-                fmt.printfln("player vx: %v, vy:%v", player.velocity.x, player.velocity.y)
+            if rl.CheckCollisionRecs(player_rect, dest_rect) {
                 if player.velocity.y < 0 {
-                    player.position.y = dest_rect.y + dest_rect.height
-                    player.velocity.y = 0
-                    player.grounded = false
+                        player.position.y = dest_rect.y + dest_rect.height
+                        player.velocity.y = 0
                 } else if player.velocity.y > 0 {
                         player.position.y = dest_rect.y - player_rect.height
                         player.velocity.y = 0 // if not, player_vel.y still accumulates and it might go through the tile
                         player.grounded = true
                 }
+                player.velocity.y = 0
             }
         }
     }
