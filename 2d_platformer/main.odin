@@ -34,11 +34,38 @@ show_memory :: proc() {
 draw_debug :: proc(player: Player) {
     rl.DrawFPS(0, 0)
     player_pos_text := fmt.ctprintf("X: %v Y: %v", player.position.x, player.position.y)
-    rl.DrawText(player_pos_text, 0, 20, 20, rl.GREEN)
+    rl.DrawText(player_pos_text, 0, 20, 20, rl.DARKGREEN)
     player_vel_text := fmt.ctprintf("VX: %v, VY:%v", player.velocity.x, player.velocity.y)
-    rl.DrawText(player_vel_text, 0, 40, 20, rl.GREEN)
+    rl.DrawText(player_vel_text, 0, 40, 20, rl.DARKGREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.Color{57, 255, 20, 255})
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.Color{57, 255, 20, 255})
+
+    player_rect := rl.Rectangle{
+        player.position.x,
+        player.position.y,
+        player.width,
+        player.height,
+    }
+
+    min_x := max(0, i32(math.floor_f32(player_rect.x / TILE_WIDTH)))
+    min_y := max(0, i32(math.floor_f32(player_rect.y / TILE_WIDTH)))
+
+    max_x := min(
+        NUM_TILE_X - 1,
+        i32(math.floor_f32((player_rect.x + player_rect.width) / TILE_WIDTH)),
+    )
+
+    max_y := min(
+        NUM_TILE_Y - 1,
+        i32(math.floor_f32((player_rect.y + player_rect.height) / TILE_WIDTH)),
+    )
+
+    player_neighbor_tile_X_text := fmt.ctprintf("X min: %v X max: %v", min_x, max_x)
+    rl.DrawText(player_neighbor_tile_X_text, 0, 60, 20, rl.DARKGREEN)
+    player_neighbor_tile_Y_text := fmt.ctprintf("Y min: %v Y max: %v", min_y, max_y)
+    rl.DrawText(player_neighbor_tile_Y_text, 0, 80, 20, rl.DARKGREEN)
+
+
 }
 
 main :: proc(){
@@ -126,7 +153,6 @@ main :: proc(){
         draw_layer(texture, props_layer, false)
         draw_layer(texture, collision_layer, true)
         draw_player(player)
-
         draw_debug(player)
         rl.EndDrawing()
     }

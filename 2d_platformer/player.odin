@@ -30,9 +30,9 @@ update_player :: proc (player: ^Player, collision_layer: ^Texture_Layer) {
     player.grounded = false
 
     if rl.IsKeyDown(.LEFT) {
-        player.velocity.x = -100
+        player.velocity.x = -200
     } else if rl.IsKeyDown(.RIGHT) {
-        player.velocity.x = 100
+        player.velocity.x = 200
     } else {
         player.velocity.x = 0
     }
