@@ -4,12 +4,22 @@ import "core:os"
 import "core:fmt"
 import "core:encoding/json"
 
+Collision_Layer :: struct {
+    height: f32,
+    id: i32,
+    rotation: f32,
+    width: f32,
+    x: f32,
+    y: f32
+}
+
 Texture_Layer :: struct {
     id: i32,
     data: [NUM_TILE_X * NUM_TILE_Y]i32,
     height: i32,
     width: i32,
-    name: string
+    name: string,
+    objects: []Collision_Layer
 }
 
 Map_Data :: struct {
