@@ -130,14 +130,23 @@ main :: proc(){
         grounded = false
     }
 
+    camera := rl.Camera2D{
+        zoom = 1.0,
+        offset = {f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())},
+        target = player.position, 
+    }
+
     for !rl.WindowShouldClose(){
         // logic
 
         // update
         update_player(&player, collision_layer)
+        camera.target = player.position
+        camera.offset = {f32(rl.GetScreenWidth()/2), f32(rl.GetScreenHeight()/2)}
 
         //render
         rl.BeginDrawing()
+        rl.BeginMode2D(camera)
         rl.ClearBackground(COLOR)
 
         // draw_background(texture)
@@ -147,6 +156,7 @@ main :: proc(){
         draw_layer(texture, collision_layer, true)
         draw_player(player)
         draw_debug(&player)
+        rl.EndMode2D()
         rl.EndDrawing()
     }
 }
