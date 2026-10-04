@@ -1,5 +1,6 @@
 package main
 
+import "vendor:vulkan"
 import "core:fmt"
 import "core:mem"
 import rl "vendor:raylib"
@@ -12,6 +13,15 @@ Animated_Texture :: struct {
     position: [2]f32,
     offset: f32,
     speed: i32
+}
+
+make_anim_texture :: proc (texture: rl.Texture, position: [2]f32, offset: f32, speed: i32) -> Animated_Texture {
+    return Animated_Texture{
+        texture = texture, 
+        position = position, 
+        offset = offset, 
+        speed = speed
+    }
 }
 
 Karl_Animations :: struct {
@@ -118,56 +128,14 @@ main :: proc () {
     }
     cat_pos:[2]f32 = { WIDTH/2, f32(HEIGHT - background_animated_3.height/2)} 
 
-    background_00 := Animated_Texture{
-        texture = background_animated_1, 
-        position = rl.Vector2{}, 
-        offset = 1, 
-        speed = 10
-    }
-    background_01 := Animated_Texture{
-        texture = background_animated_1, 
-        position = rl.Vector2{f32(background_animated_1.width), 0}, 
-        offset = 1, 
-        speed = 10
-    }
-
-    background_10 := Animated_Texture{
-        texture = background_animated_2, 
-        position = rl.Vector2{}, 
-        offset = 1, 
-        speed = 20
-    }
-    background_11 := Animated_Texture{
-        texture = background_animated_2, 
-        position = rl.Vector2{f32(background_animated_2.width), 0}, 
-        offset = 1, 
-        speed = 20
-    }
-
-    background_20 := Animated_Texture{
-        texture = background_animated_3, 
-        position = rl.Vector2{0, f32(HEIGHT - background_animated_3.height/2)}, 
-        offset = 3, 
-        speed = 75
-    }
-    background_21 := Animated_Texture{
-        texture = background_animated_3, 
-        position = rl.Vector2{f32(background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, 
-        offset = 3, 
-        speed = 75
-    }
-    background_22 := Animated_Texture{
-        texture = background_animated_3, 
-        position = rl.Vector2{f32(2*background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, 
-        offset = 3, 
-        speed = 75
-    }
-    background_23 := Animated_Texture{
-        texture = background_animated_3, 
-        position = rl.Vector2{f32(3*background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, 
-        offset = 3, 
-        speed = 75
-    }
+    background_00 := make_anim_texture(texture = background_animated_1, position = rl.Vector2{}, offset = 1, speed = 10)
+    background_01 := make_anim_texture(texture = background_animated_1, position = rl.Vector2{f32(background_animated_1.width), 0}, offset = 1, speed = 10)
+    background_10 := make_anim_texture(texture = background_animated_2, position = rl.Vector2{}, offset = 1, speed = 20)
+    background_11 := make_anim_texture(texture = background_animated_2, position = rl.Vector2{f32(background_animated_2.width), 0}, offset = 1, speed = 20)
+    background_20 := make_anim_texture(texture = background_animated_3, position = rl.Vector2{0, f32(HEIGHT - background_animated_3.height/2)}, offset = 3, speed = 75)
+    background_21 := make_anim_texture(texture = background_animated_3, position = rl.Vector2{f32(background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, offset = 3, speed = 75)
+    background_22 := make_anim_texture(texture = background_animated_3, position = rl.Vector2{f32(2*background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, offset = 3, speed = 75)
+    background_23 := make_anim_texture(texture = background_animated_3, position = rl.Vector2{f32(3*background_animated_3.width), f32(HEIGHT - background_animated_3.height/2)}, offset = 3, speed = 75)
 
     background_textures:= make([dynamic]Animated_Texture, 9, context.allocator)//[8]Animated_Texture
     append(&background_textures, background_00, background_01, background_10, background_11, background_20, background_21, background_22, background_22, background_23)
