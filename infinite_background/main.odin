@@ -30,7 +30,7 @@ Karl_Cat :: struct {
     speed: i32
 }
 
-update_karl_animation :: proc(a: ^Karl_Animations){
+update_karl_animation :: proc (a: ^Karl_Animations){
     dt:= rl.GetFrameTime()
     a.frame_timer += dt
         if a.frame_timer > a.frame_length {
@@ -42,23 +42,22 @@ update_karl_animation :: proc(a: ^Karl_Animations){
         }
 }
 
-draw_karl :: proc(a: Karl_Animations, position: [2]f32){
+draw_karl :: proc (a: Karl_Animations, position: [2]f32){
     // this draws a part of a texture
-    source := rl.Rectangle{
+    source := rl.Rectangle {
         x=f32(a.current_frame) * a.frame_width / f32(a.num_frames),
         y=0,
         width=a.frame_width / f32(a.num_frames),
         height=a.frame_height,
     }
 
-    dest :=  rl.Rectangle{
+    dest := rl.Rectangle {
         x=position.x,
         y=position.y,
         width=2*a.frame_width / f32(a.num_frames),
         height=2*a.frame_height,
     }
     rl.DrawTexturePro(a.texture, source, dest, rl.Vector2{dest.width/2, dest.height}, 0 , rl.RAYWHITE)
-    // rl.DrawTextureEx(a.texture, source, dest, rl.Vector2{dest.width/2, dest.height}, 0 , rl.RAYWHITE)
 }
 
 update_animated_texture :: proc (anim_texture: ^Animated_Texture) {
@@ -170,6 +169,9 @@ main :: proc () {
         speed = 75
     }
 
+    background_textures:= make([dynamic]Animated_Texture, 9, context.allocator)//[8]Animated_Texture
+    append(&background_textures, background_00, background_01, background_10, background_11, background_20, background_21, background_22, background_22, background_23)
+
     defer rl.UnloadTexture(background_fixed)
     defer rl.UnloadTexture(background_animated_1)
     defer rl.UnloadTexture(background_animated_2)
@@ -177,14 +179,9 @@ main :: proc () {
 
     for !rl.WindowShouldClose() {
         // update
-        update_animated_texture(&background_00)
-        update_animated_texture(&background_01)
-        update_animated_texture(&background_10)
-        update_animated_texture(&background_11)
-        update_animated_texture(&background_20)
-        update_animated_texture(&background_21)
-        update_animated_texture(&background_22)
-        update_animated_texture(&background_23)
+        for anim_texture in 0..<len(background_textures) {
+            update_animated_texture(&background_textures[anim_texture])
+        }
         update_karl_animation(&cat_run_animation)
      
 
@@ -192,14 +189,9 @@ main :: proc () {
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
         rl.DrawTextureV(background_fixed, rl.Vector2{}, rl.RAYWHITE)
-        draw_animated_texture(background_00)
-        draw_animated_texture(background_01)
-        draw_animated_texture(background_10)
-        draw_animated_texture(background_11)
-        draw_animated_texture(background_20)
-        draw_animated_texture(background_21)
-        draw_animated_texture(background_22)
-        draw_animated_texture(background_23)
+        for anim_texture in 0..<len(background_textures) {
+            draw_animated_texture(background_textures[anim_texture])
+        }
         draw_karl(cat_run_animation, cat_pos)
 
         // rl.DrawFPS(0,0)
