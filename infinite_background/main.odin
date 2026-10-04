@@ -139,11 +139,19 @@ main :: proc () {
 
     background_textures:= make([dynamic]Animated_Texture, 9, context.allocator)//[8]Animated_Texture
     append(&background_textures, background_00, background_01, background_10, background_11, background_20, background_21, background_22, background_22, background_23)
+    defer delete(background_textures)
 
     defer rl.UnloadTexture(background_fixed)
+    defer rl.UnloadTexture(cat_texture)
     defer rl.UnloadTexture(background_animated_1)
     defer rl.UnloadTexture(background_animated_2)
     defer rl.UnloadTexture(background_animated_3)
+
+    camera := rl.Camera2D{
+        zoom = 1.5,
+        offset = {f32(rl.GetScreenWidth()/2), WIDTH/2},
+        target = cat_pos, 
+    }
 
     for !rl.WindowShouldClose() {
         // update
@@ -152,18 +160,16 @@ main :: proc () {
         }
         update_karl_animation(&cat_run_animation)
      
-
         //rendering
         rl.BeginDrawing()
+        rl.BeginMode2D(camera)
         rl.ClearBackground(rl.BLACK)
         rl.DrawTextureV(background_fixed, rl.Vector2{}, rl.RAYWHITE)
         for anim_texture in 0..<len(background_textures) {
             draw_animated_texture(background_textures[anim_texture])
         }
         draw_karl(cat_run_animation, cat_pos)
-
-        // rl.DrawFPS(0,0)
-       
+        rl.EndMode2D()
         rl.EndDrawing()
     }
 }
