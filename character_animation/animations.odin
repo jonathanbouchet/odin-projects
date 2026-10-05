@@ -37,7 +37,6 @@ load_textures_from_directory :: proc(directory: string) -> [dynamic]rl.Texture{
 
     fmt.printfln("Number of files: %d", count)
     textures_data:= make([dynamic]rl.Texture, count)
-    delete(textures_data)
 
     for i in 0..<count {
         path := fmt.tprintf("%s/%d.png", directory, i)

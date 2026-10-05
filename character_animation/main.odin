@@ -51,6 +51,13 @@ main :: proc() {
     count := len(textures_data)
     textures:= make(map[string][dynamic]rl.Texture, count)
     textures["idle"] = textures_data
+    delete(textures_data)
+
+    textures_data = load_textures_from_directory("assets/player/run")
+    count = len(textures_data)
+    textures["run"] = textures_data
+    delete(textures_data)
+
 
     for key, value in textures {
         fmt.printfln("key: %v, value: %v", key, value)
