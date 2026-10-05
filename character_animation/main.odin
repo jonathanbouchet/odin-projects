@@ -46,29 +46,27 @@ main :: proc() {
     rl.InitWindow(WIDTH, HEIGHT, "character animation")
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
-  
-    textures_data := load_textures_from_directory("assets/player/idle")
-    count := len(textures_data)
-    textures:= make(map[string][dynamic]rl.Texture, count)
-    textures["idle"] = textures_data
-    delete(textures_data)
-
-    textures_data = load_textures_from_directory("assets/player/run")
-    count = len(textures_data)
-    textures["run"] = textures_data
-    delete(textures_data)
-
+    
+    textures:= make(map[string][dynamic]rl.Texture)
+    textures["idle"] = load_textures_from_directory("assets/player/idle")
+    textures["run"] = load_textures_from_directory("assets/player/run")
+    defer unload_textures(&textures)
 
     for key, value in textures {
         fmt.printfln("key: %v, value: %v", key, value)
     }
 
-    delete(textures)
+    // player
+    player := Player{
+        position = {f32(WIDTH/2 - textures["idle"][0].width/2), f32(HEIGHT/2 - textures["idle"][0].height/2)}, 
+        speed = 20, 
+        state = .IDLE}
 
     for !rl.WindowShouldClose() {
         // update
         // render
         rl.BeginDrawing(); defer rl.EndDrawing()
+        draw_player(player, textures["idle"][0])
         rl.ClearBackground(BACKGROUND)
         draw_debug()
     }

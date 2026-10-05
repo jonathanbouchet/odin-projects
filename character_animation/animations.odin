@@ -14,7 +14,7 @@ Player_Animations :: struct {
     animations: [8]Animation_Frames,
 }
 
-load_textures_from_directory :: proc(directory: string) -> [dynamic]rl.Texture{
+load_textures_from_directory :: proc(directory: string) -> [dynamic]rl.Texture {
     dir_handle, open_err := os.open(directory)
     if open_err != nil {
         fmt.eprintln("Failed to open directory:", open_err)
@@ -36,7 +36,7 @@ load_textures_from_directory :: proc(directory: string) -> [dynamic]rl.Texture{
     count := len(file_infos)
 
     fmt.printfln("Number of files: %d", count)
-    textures_data:= make([dynamic]rl.Texture, count)
+    textures_data:= make([dynamic]rl.Texture, 0, count)
 
     for i in 0..<count {
         path := fmt.tprintf("%s/%d.png", directory, i)
@@ -47,4 +47,14 @@ load_textures_from_directory :: proc(directory: string) -> [dynamic]rl.Texture{
     }
 
     return textures_data
+}
+
+unload_textures :: proc(textures: ^map[string][dynamic]rl.Texture) {
+	for _, frames in textures^ {
+		for texture in frames {
+			rl.UnloadTexture(texture)
+		}
+		delete(frames)
+	}
+	delete(textures^)
 }
