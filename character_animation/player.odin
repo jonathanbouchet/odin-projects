@@ -21,10 +21,12 @@ Player :: struct {
 }
 
 draw_player :: proc(player: Player, texture: rl.Texture) {
+    // draw the player from an animation texture
     rl.DrawTextureEx(texture, player.position, 0.0, 1.0, rl.RAYWHITE)
 }
 
 get_animation_string:: proc(anim: ANIMATION_NAME) -> string {
+    // convert player animation state to string
     switch anim {
         case .ATTACK:     return "attack"
         case .IDLE:       return "idle"
@@ -36,6 +38,7 @@ get_animation_string:: proc(anim: ANIMATION_NAME) -> string {
 
 
 switch_state:: proc(player: ^Player) {
+    // switch player state based on KB input
     if rl.IsKeyDown(.A) {
         player.state = .ATTACK
     }
@@ -51,6 +54,16 @@ switch_state:: proc(player: ^Player) {
 }
 
 update_animation :: proc(
+    /*
+    update player animation based on delta time and state
+    - for a given animation:
+        - accumulate the time of the current frame
+        - if time > animation_frame_length (set in player instantiation), move the next frame
+        - reset player.run_frame_timer
+    - if current state different from previous state:
+        - reset animation frame to the first one
+        - reset run_frame_timer
+    */
     player: ^Player,
     textures: ^map[string][dynamic]rl.Texture,
 ) -> rl.Texture {
@@ -84,4 +97,8 @@ update_animation :: proc(
     }
 
     return frames[player.animation_current_frame]
+}
+
+update_player :: proc(player: ^Player) {
+
 }
