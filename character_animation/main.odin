@@ -9,8 +9,17 @@ WIDTH :: 600
 HEIGHT :: 600
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
+TILE_WIDTH :: 64
 // BACKGROUND :: rl.Color{15, 15, 15, 255}
 // BACKGROUND :: rl.Color{ 150, 190, 220, 255 }
+
+draw_platform :: proc(texture: rl.Texture, tile_id: i32) {
+    i: i32 = 5
+    j: i32 = 5
+    source_rect := rl.Rectangle{f32(1 * TILE_WIDTH), f32(0 * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
+    dest_rect := rl.Rectangle{f32(i*TILE_WIDTH), f32(j*TILE_WIDTH), TILE_WIDTH, TILE_WIDTH} 
+    rl.DrawTexturePro(texture, source_rect, dest_rect, rl.Vector2{0, 0}, 0.0,  rl.RAYWHITE)
+}
 
 draw_debug :: proc(player: Player) {
     rl.DrawFPS(0, 0)
@@ -78,6 +87,11 @@ main :: proc() {
         run_frame_timer = 0.0,
     }
 
+    outside := rl.LoadTexture("assets/tilesets/outside.png")
+    defer rl.UnloadTexture(outside)
+    // testing
+    tile_id: i32 = 0
+
     for !rl.WindowShouldClose() {
         // update
         switch_state(&player)
@@ -88,6 +102,7 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND)
         draw_player(player, current_animation_texture)
         draw_debug(player)
+        draw_platform(outside, tile_id)
         rl.EndDrawing()
     }
     rl.CloseWindow()
