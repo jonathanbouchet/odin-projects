@@ -3,6 +3,8 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
+gravity: f32 = 100 // pixels per second squared
+
 ANIMATION_NAME :: enum {
     ATTACK,
     IDLE,
@@ -12,12 +14,26 @@ ANIMATION_NAME :: enum {
 
 Player :: struct {
     position: [2]f32,
-    speed: i32,
+    velocity: [2]f32,
+    width: f32,
+    height: f32,
+    grounded: bool,
+    was_grounded: bool,
     state: ANIMATION_NAME,
     previous_state: ANIMATION_NAME,
     animation_frame_length: f32, // duration of a single animation frame
     animation_current_frame: i32, // index of the frame/png in the current animation
     run_frame_timer: f32 // how long the current frame has been displayed, in seconds
+}
+
+get_player_rect :: proc (player: Player) -> rl.Rectangle {
+    // return a Rectangle based on player current position
+    return rl.Rectangle {
+            player.position.x,
+            player.position.y,
+            player.width,
+            player.height,
+        }
 }
 
 draw_player :: proc(player: Player, texture: rl.Texture) {
@@ -35,7 +51,6 @@ get_animation_string:: proc(anim: ANIMATION_NAME) -> string {
         case:             return  "idle"
     }
 }
-
 
 switch_state:: proc(player: ^Player) {
     // switch player state based on KB input
@@ -99,6 +114,48 @@ update_animation :: proc(
     return frames[player.animation_current_frame]
 }
 
-update_player :: proc(player: ^Player) {
+update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
 
+    dt := rl.GetFrameTime()
+    // Grounded must be recalculated every frame.
+    player.was_grounded = player.grounded
+    player.grounded = false
+
+    if rl.IsKeyDown(.LEFT) {
+        player.velocity.x = -200
+    } else if rl.IsKeyDown(.RIGHT) {
+        player.velocity.x = 200
+    } else {
+        player.velocity.x = 0
+    }
+
+    // jump
+    if player.was_grounded && rl.IsKeyPressed(.SPACE){
+        player.velocity.y = -150
+    }
+
+    // apply gravity
+    player.velocity.y += gravity * dt
+    // player.position += player.velocity * dt
+
+    // Move horizontally first.
+    player.position.x += player.velocity.x * dt
+    // resolve_collision(player, collision_layer, .X)
+
+    // Move vertically.
+    player.position.y += player.velocity.y * dt
+    // resolve_collision(player, collision_layer, .Y)
+
+    // fmt.printfln("player position: %v", player.position)
+
+    for platform in platforms {
+        tmp_player := player^
+        player_rect := get_player_rect(tmp_player)
+        platform_rect  := get_platform_rect(platform)
+        if rl.CheckCollisionRecs(player_rect, platform_rect) && player.velocity.y > 0{
+            player.velocity.y = 0
+            player.position.y = platform_rect.y - platform_rect.height// - player.height
+            player.grounded = true
+        }
+    }
 }

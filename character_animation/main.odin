@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 package main
 
 import "core:mem"
@@ -8,12 +9,14 @@ import rl "vendor:raylib"
 WIDTH :: 600
 HEIGHT :: 600
 FPS :: 60
-BACKGROUND :: rl.Color{0, 0, 28, 255}
+// BACKGROUND :: rl.Color{0, 0, 28, 255}
 TILE_WIDTH :: 64
-// BACKGROUND :: rl.Color{15, 15, 15, 255}
+BACKGROUND :: rl.Color{15, 15, 15, 255}
 // BACKGROUND :: rl.Color{ 150, 190, 220, 255 }
+GREEN :: rl.Color{57, 255, 20, 255}
 
 draw_platform :: proc(texture: rl.Texture, tile_id: i32) {
+    // draw a tile from a tileset
     i: i32 = 5
     j: i32 = 5
     source_rect := rl.Rectangle{f32(1 * TILE_WIDTH), f32(0 * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
@@ -22,15 +25,23 @@ draw_platform :: proc(texture: rl.Texture, tile_id: i32) {
 }
 
 draw_debug :: proc(player: Player) {
+    /*
+    various "debug" utils:
+    - draw the FPS number
+    - draw  lines, h and v, representing the mid-screen
+    - draw player state
+    */
     rl.DrawFPS(0, 0)
-    rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.Color{57, 255, 20, 255})
-    rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.Color{57, 255, 20, 255})
+    rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.RED)
+    rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.RED)
     player_state_string, ok := fmt.enum_value_to_string(player.state)
     if ok {
         player_state_cstring := strings.clone_to_cstring(player_state_string)
         defer delete(player_state_cstring)
         rl.DrawText(player_state_cstring, 0, 20, 20, rl.DARKGREEN)
     }
+    player_rect := get_player_rect(player)
+    rl.DrawRectangleLinesEx(player_rect, 1.0, rl.YELLOW)
 }
 
 main :: proc() {
@@ -78,8 +89,17 @@ main :: proc() {
     anim_start := ANIMATION_NAME.IDLE
     anim_start_ctring := get_animation_string(anim_start)
     player := Player{
-        position = {f32(WIDTH/2 - textures[anim_start_ctring][0].width/2), f32(HEIGHT/2 - textures[anim_start_ctring][0].height/2)}, 
-        speed = 20, 
+        position = {
+            f32(WIDTH/2 - textures[anim_start_ctring][0].width/2), 
+            f32(200)
+        },
+        // position = {
+        //     f32(WIDTH/2 - textures[anim_start_ctring][0].width/2), 
+        //     f32(HEIGHT/2 - textures[anim_start_ctring][0].height/2)
+        // }, 
+        velocity = rl.Vector2{0, 0},
+        width = f32(textures[anim_start_ctring][0].width),
+        height = f32(textures[anim_start_ctring][0].height),
         state = .IDLE,
         previous_state = .IDLE,
         animation_frame_length = 0.1,
@@ -87,14 +107,28 @@ main :: proc() {
         run_frame_timer = 0.0,
     }
 
-    outside := rl.LoadTexture("assets/tilesets/outside.png")
-    defer rl.UnloadTexture(outside)
+    // a platform defined from a tileset
+    // outside := rl.LoadTexture("assets/tilesets/outside.png")
+    // defer rl.UnloadTexture(outside)
     // testing
-    tile_id: i32 = 0
+    // tile_id: i32 = 0
+
+    // platforms defined from Raylib basic shape 
+    ground := Platform{
+        x = 0, y = 400, width = rl.GetScreenWidth(), height = 50, color = GREEN
+    }
+
+    p1 := Platform{
+        x = 100, y = 200, width = 100, height = 20, color = GREEN
+    }
+
+    platforms := [dynamic]Platform{ground, p1} 
+    defer delete(platforms)
 
     for !rl.WindowShouldClose() {
         // update
         switch_state(&player)
+        update_player(&player, platforms)
         current_animation_texture := update_animation(&player, &textures)
 
         // render
@@ -102,7 +136,8 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND)
         draw_player(player, current_animation_texture)
         draw_debug(player)
-        draw_platform(outside, tile_id)
+        draw_platforms_lines(platforms)
+        // draw_platform(outside, tile_id)
         rl.EndDrawing()
     }
     rl.CloseWindow()

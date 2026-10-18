@@ -10,6 +10,10 @@ Platform :: struct {
     color: rl.Color
 }
 
+get_platform_rect :: proc(p: Platform) -> rl.Rectangle {
+    return rl.Rectangle{f32(p.x), f32(p.y), f32(p.width), f32(p.height)}
+}
+
 draw_platform_lines :: proc(p: Platform) {
     // draw a platform outline
     rl.DrawRectangleLines(p.x, p.y, p.width, p.height, p.color)
