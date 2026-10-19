@@ -35,6 +35,7 @@ odin version
 - SDL in Odin: https://www.youtube.com/playlist?list=PLO02jwa2ZaiDY7kVImqZUHDiuomsl7OdA
 - OpenGL in Odin: https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
 - KArl Zylinski's webpage: https://zylinski.se/
+- Peter Mbanugo `Learn Odin in an Hour`'s blog: https://pmbanugo.me/series/odin-in-an-hour 
 
 ## Coding style
 
