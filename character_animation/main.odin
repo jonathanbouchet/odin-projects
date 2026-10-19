@@ -93,13 +93,15 @@ main :: proc() {
             f32(WIDTH/2 - textures[anim_start_ctring][0].width/2), 
             f32(200)
         },
-        // position = {
-        //     f32(WIDTH/2 - textures[anim_start_ctring][0].width/2), 
-        //     f32(HEIGHT/2 - textures[anim_start_ctring][0].height/2)
-        // }, 
         velocity = rl.Vector2{0, 0},
         width = f32(textures[anim_start_ctring][0].width),
         height = f32(textures[anim_start_ctring][0].height),
+        offset_x = 0,
+        offset_y = 0,
+        collider_width = 32,
+        collider_height = 8,
+        grounded = false,
+        was_grounded = false,
         state = .IDLE,
         previous_state = .IDLE,
         animation_frame_length = 0.1,

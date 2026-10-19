@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
-gravity: f32 = 100 // pixels per second squared
+gravity: f32 = 10 // pixels per second squared
 
 ANIMATION_NAME :: enum {
     ATTACK,
@@ -17,6 +17,10 @@ Player :: struct {
     velocity: [2]f32,
     width: f32,
     height: f32,
+    offset_x: i32, // offset from texture center to the left for collider rect
+    offset_y: i32, // offset from texture center to the left for collider rect,
+    collider_width: f32,
+    collider_height: f32,
     grounded: bool,
     was_grounded: bool,
     state: ANIMATION_NAME,
@@ -28,11 +32,17 @@ Player :: struct {
 
 get_player_rect :: proc (player: Player) -> rl.Rectangle {
     // return a Rectangle based on player current position
+    // return rl.Rectangle {
+    //         player.position.x,
+    //         player.position.y,
+    //         player.width,
+    //         player.height,
+    //     }
     return rl.Rectangle {
-            player.position.x,
-            player.position.y,
-            player.width,
-            player.height,
+            player.position.x + 38,
+            player.position.y + player.height - 28,
+            player.collider_width,
+            player.collider_height,
         }
 }
 
@@ -136,25 +146,21 @@ update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
 
     // apply gravity
     player.velocity.y += gravity * dt
-    // player.position += player.velocity * dt
 
     // Move horizontally first.
     player.position.x += player.velocity.x * dt
-    // resolve_collision(player, collision_layer, .X)
 
     // Move vertically.
     player.position.y += player.velocity.y * dt
-    // resolve_collision(player, collision_layer, .Y)
-
-    // fmt.printfln("player position: %v", player.position)
 
     for platform in platforms {
         tmp_player := player^
         player_rect := get_player_rect(tmp_player)
-        platform_rect  := get_platform_rect(platform)
-        if rl.CheckCollisionRecs(player_rect, platform_rect) && player.velocity.y > 0{
+        platform_rect := get_platform_rect(platform)
+        if rl.CheckCollisionRecs(player_rect, platform_rect){
+            fmt.printfln("player_rect: %v, platform_rect: %v", player_rect, platform_rect)
+            player.position.y = platform_rect.y - player_rect.height
             player.velocity.y = 0
-            player.position.y = platform_rect.y - platform_rect.height// - player.height
             player.grounded = true
         }
     }
