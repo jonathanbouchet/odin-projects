@@ -3,7 +3,7 @@ package main
 import "core:fmt"
 import rl "vendor:raylib"
 
-gravity: f32 = 10 // pixels per second squared
+gravity: f32 = 500 // pixels per second squared
 
 ANIMATION_NAME :: enum {
     ATTACK,
@@ -32,12 +32,6 @@ Player :: struct {
 
 get_player_rect :: proc (player: Player) -> rl.Rectangle {
     // return a Rectangle based on player current position
-    // return rl.Rectangle {
-    //         player.position.x,
-    //         player.position.y,
-    //         player.width,
-    //         player.height,
-    //     }
     return rl.Rectangle {
             player.position.x + 38,
             player.position.y + player.height - 28,
@@ -141,7 +135,7 @@ update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
 
     // jump
     if player.was_grounded && rl.IsKeyPressed(.SPACE){
-        player.velocity.y = -150
+        player.velocity.y = -300
     }
 
     // apply gravity
@@ -150,18 +144,40 @@ update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
     // Move horizontally first.
     player.position.x += player.velocity.x * dt
 
+    // Save the collider position before vertical movement.
+    previous_rect := get_player_rect(player^)
+
     // Move vertically.
     player.position.y += player.velocity.y * dt
 
+    current_rect := get_player_rect(player^)
+
+    tmp_player := player^
+    player_rect := get_player_rect(tmp_player)
+
     for platform in platforms {
-        tmp_player := player^
-        player_rect := get_player_rect(tmp_player)
         platform_rect := get_platform_rect(platform)
-        if rl.CheckCollisionRecs(player_rect, platform_rect){
-            fmt.printfln("player_rect: %v, platform_rect: %v", player_rect, platform_rect)
-            player.position.y = platform_rect.y - player_rect.height
+        // Only land while falling, and only if the collider crossed the platform top.
+        crossed_top := player.velocity.y > 0 &&
+            previous_rect.y + previous_rect.height <= platform_rect.y &&
+            current_rect.y + current_rect.height >= platform_rect.y
+
+        overlaps_x := current_rect.x < platform_rect.x + platform_rect.width &&
+            current_rect.x + current_rect.width > platform_rect.x
+
+        if crossed_top && overlaps_x {
+            // Move the player so the collider bottom rests on the platform top.
+            player.position.y += platform_rect.y -
+                (current_rect.y + current_rect.height)
             player.velocity.y = 0
             player.grounded = true
+            break
         }
+        // if rl.CheckCollisionRecs(player_rect, platform_rect){
+        //     fmt.printfln("player_rect: %v, platform_rect: %v", player_rect, platform_rect)
+        //     player.position.y = platform_rect.y - platform_rect.height
+        //     player.velocity.y = 0
+        //     player.grounded = true
+        // }
     }
 }

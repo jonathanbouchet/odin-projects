@@ -117,7 +117,7 @@ main :: proc() {
 
     // platforms defined from Raylib basic shape 
     ground := Platform{
-        x = 0, y = 400, width = rl.GetScreenWidth(), height = 50, color = GREEN
+        x = 0, y = 400, width = rl.GetScreenWidth(), height = 100, color = GREEN
     }
 
     p1 := Platform{
