@@ -3,6 +3,7 @@ package main
 
 import "core:mem"
 import "core:fmt"
+import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -28,7 +29,7 @@ draw_debug :: proc(player: Player) {
     /*
     various "debug" utils:
     - draw the FPS number
-    - draw  lines, h and v, representing the mid-screen
+    - draw lines, h and v, representing the mid-screen
     - draw player state
     */
     rl.DrawFPS(0, 0)
@@ -42,6 +43,8 @@ draw_debug :: proc(player: Player) {
     }
     player_rect := get_player_rect(player)
     rl.DrawRectangleLinesEx(player_rect, 1.0, rl.YELLOW)
+    player_pos_text := fmt.ctprintf("X: %v Y: %v", math.round(player.position.x), math.round(player.position.y))
+    rl.DrawText(player_pos_text, 0, 40, 20, rl.DARKGREEN)
 }
 
 main :: proc() {
@@ -99,7 +102,7 @@ main :: proc() {
         offset_x = 0,
         offset_y = 0,
         collider_width = 32,
-        collider_height = 8,
+        collider_height = 40,
         grounded = false,
         was_grounded = false,
         state = .IDLE,
@@ -117,14 +120,22 @@ main :: proc() {
 
     // platforms defined from Raylib basic shape 
     ground := Platform{
-        x = 0, y = 400, width = rl.GetScreenWidth(), height = 100, color = GREEN
+        x = 0, y = 400, width = rl.GetScreenWidth(), height = 10, color = GREEN
     }
 
     p1 := Platform{
         x = 100, y = 200, width = 100, height = 20, color = GREEN
     }
 
-    platforms := [dynamic]Platform{ground, p1} 
+    p2 := Platform{
+        x = 400, y = 350, width = 100, height = 20, color = GREEN
+    }
+
+    p3 := Platform{
+        x = 200, y = 300, width = 50, height = 20, color = GREEN
+    }
+
+    platforms := [dynamic]Platform{ground, p1, p2, p3} 
     defer delete(platforms)
 
     for !rl.WindowShouldClose() {
