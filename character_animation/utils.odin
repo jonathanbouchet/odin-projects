@@ -24,7 +24,6 @@ resolve_collision :: proc (player: ^Player, platforms: [dynamic]Platform, axis: 
 
         switch axis {
             case .X:
-                fmt.printfln("collision X")
                 if player.velocity.x > 0 {
                     player.position.x += platform_rect.x - (player_rect.x + player_rect.width)
                 } else if player.velocity.x < 0 {

@@ -145,35 +145,7 @@ update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
     player.position.x += player.velocity.x * dt
     resolve_collision(player, platforms, .X)
 
-    // Save the collider position before vertical movement.
-    // previous_rect := get_player_rect(player^)
-
     // Move vertically.
     player.position.y += player.velocity.y * dt
-
-    // current_rect := get_player_rect(player^)
-
-    // tmp_player := player^
-    // player_rect := get_player_rect(tmp_player)
     resolve_collision(player, platforms, .Y)
-
-    // for platform in platforms {
-    //     platform_rect := get_platform_rect(platform)
-    //     // Only land while falling, and only if the collider crossed the platform top.
-    //     crossed_top := player.velocity.y > 0 &&
-    //         previous_rect.y + previous_rect.height <= platform_rect.y &&
-    //         current_rect.y + current_rect.height >= platform_rect.y
-
-    //     overlaps_x := current_rect.x < platform_rect.x + platform_rect.width &&
-    //         current_rect.x + current_rect.width > platform_rect.x
-
-    //     if crossed_top && overlaps_x {
-    //         // Move the player so the collider bottom rests on the platform top.
-    //         player.position.y += platform_rect.y -
-    //             (current_rect.y + current_rect.height)
-    //         player.velocity.y = 0
-    //         player.grounded = true
-    //         break
-    //     }
-    // }
 }
