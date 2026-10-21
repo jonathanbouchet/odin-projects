@@ -7,23 +7,16 @@ import "core:math"
 import "core:strings"
 import rl "vendor:raylib"
 
-WIDTH :: 600
-HEIGHT :: 600
+WIDTH :: 1280
+HEIGHT :: 640
 FPS :: 60
-// BACKGROUND :: rl.Color{0, 0, 28, 255}
+BACKGROUND :: rl.Color{0, 0, 28, 255}
 TILE_WIDTH :: 64
-BACKGROUND :: rl.Color{15, 15, 15, 255}
+// BACKGROUND :: rl.Color{15, 15, 15, 255}
 // BACKGROUND :: rl.Color{ 150, 190, 220, 255 }
 GREEN :: rl.Color{57, 255, 20, 255}
-
-draw_platform :: proc(texture: rl.Texture, tile_id: i32) {
-    // draw a tile from a tileset
-    i: i32 = 5
-    j: i32 = 5
-    source_rect := rl.Rectangle{f32(1 * TILE_WIDTH), f32(0 * TILE_WIDTH), TILE_WIDTH, TILE_WIDTH }
-    dest_rect := rl.Rectangle{f32(i*TILE_WIDTH), f32(j*TILE_WIDTH), TILE_WIDTH, TILE_WIDTH} 
-    rl.DrawTexturePro(texture, source_rect, dest_rect, rl.Vector2{0, 0}, 0.0,  rl.RAYWHITE)
-}
+NUM_TILE_X :: 20
+NUM_TILE_Y :: 10
 
 draw_debug :: proc(player: Player) {
     /*
@@ -75,6 +68,50 @@ main :: proc() {
     }
     rl.InitWindow(WIDTH, HEIGHT, "character animation")
     rl.SetTargetFPS(FPS)
+
+    // read input data
+    map_data := read_input_data("assets/tilesets/level_20x10.tmj", Map_Data)
+    // delete the dynamically alocated fields
+    defer delete(map_data.layers)
+    fmt.println(typeid_of(type_of(map_data))) 
+    fmt.printfln("# of layers: %v", len(map_data.layers))
+
+    platform_layer: ^Texture_Layer = nil
+    collision_layer: ^Texture_Layer = nil
+
+    platform_layer = extract_layer_data(map_data, 1)
+    collision_layer = extract_layer_data(map_data, 3)
+
+    if platform_layer != nil {
+        fmt.println("Found layer:", platform_layer.name)
+    }
+
+    if collision_layer != nil {
+        fmt.println("Found layer:", collision_layer.name)
+    }
+
+    fmt.printfln("platform layer: %v", platform_layer)
+    fmt.println(typeid_of(type_of(platform_layer))) 
+
+    fmt.printfln("collision layer: %v", collision_layer)
+    fmt.println(typeid_of(type_of(collision_layer)))
+    
+    platforms: [dynamic]Platform
+    defer delete(platforms)
+
+    for collision_block in collision_layer.objects {
+        fmt.printfln("collision block: %v", collision_block)
+        append(&platforms, Platform {
+            x = i32(collision_block.x), 
+            y = i32(collision_block.y), 
+            width = i32(collision_block.width), 
+            height = i32(collision_block.height), 
+            color = GREEN
+        })
+    }
+
+    texture := rl.LoadTexture("assets/tilesets/outside.png")
+    defer rl.UnloadTexture(texture)
     
     textures:= make(map[string][dynamic]rl.Texture)
     textures["idle"] = load_textures_from_directory("assets/player/idle")
@@ -84,9 +121,9 @@ main :: proc() {
     textures["jump"] = load_textures_from_directory("assets/player/jump")
     defer unload_textures(&textures)
 
-    for key, value in textures {
-        fmt.printfln("key: %v, value: %v", key, value)
-    }
+    // for key, value in textures {
+    //     fmt.printfln("key: %v, value: %v", key, value)
+    // }
 
     // player
     anim_start := ANIMATION_NAME.IDLE
@@ -112,32 +149,6 @@ main :: proc() {
         run_frame_timer = 0.0,
     }
 
-    // a platform defined from a tileset
-    // outside := rl.LoadTexture("assets/tilesets/outside.png")
-    // defer rl.UnloadTexture(outside)
-    // testing
-    // tile_id: i32 = 0
-
-    // platforms defined from Raylib basic shape 
-    ground := Platform{
-        x = 0, y = 400, width = rl.GetScreenWidth(), height = 10, color = GREEN
-    }
-
-    p1 := Platform{
-        x = 100, y = 200, width = 100, height = 20, color = GREEN
-    }
-
-    p2 := Platform{
-        x = 400, y = 350, width = 100, height = 20, color = GREEN
-    }
-
-    p3 := Platform{
-        x = 200, y = 300, width = 50, height = 20, color = GREEN
-    }
-
-    platforms := [dynamic]Platform{ground, p1, p2, p3} 
-    defer delete(platforms)
-
     for !rl.WindowShouldClose() {
         // update
         switch_state(&player)
@@ -147,10 +158,10 @@ main :: proc() {
         // render
         rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND)
+        draw_layer(texture, platform_layer, false)
         draw_player(player, current_animation_texture)
         draw_debug(player)
         draw_platforms_lines(platforms)
-        // draw_platform(outside, tile_id)
         rl.EndDrawing()
     }
     rl.CloseWindow()
