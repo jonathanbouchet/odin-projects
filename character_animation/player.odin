@@ -119,7 +119,12 @@ update_animation :: proc(
 }
 
 update_player :: proc(player: ^Player, platforms: [dynamic]Platform) {
-
+    /* update the player
+    - get input and modify velocity first
+    - apply gravity
+    - modify then poition (Euler integration)
+    - resolves collision and x and y separately
+    */
     dt := rl.GetFrameTime()
     // Grounded must be recalculated every frame.
     player.was_grounded = player.grounded

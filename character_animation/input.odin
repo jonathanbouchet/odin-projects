@@ -31,6 +31,11 @@ Map_Data :: struct {
 }
 
 read_input_data :: proc(filepath: string, $T: typeid) -> T {
+    /* 
+    - read Tiled exported map to JSON (.tmj extension)
+    - parse Tiled Layers and extract data: width, height, tileID array
+    */
+
     // as a temporary allocation, use the temp_allocator
     input_data, ok := os.read_entire_file(filepath, context.temp_allocator)
     if ok != nil {
@@ -50,6 +55,9 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
 }
 
 extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
+    /*
+    - convert a Tiled layer data to a Texture_Layer
+    */
     current_layer: ^Texture_Layer = nil
     for &layer in data.layers {
         if layer.id == layer_id {

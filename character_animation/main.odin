@@ -121,10 +121,6 @@ main :: proc() {
     textures["jump"] = load_textures_from_directory("assets/player/jump")
     defer unload_textures(&textures)
 
-    // for key, value in textures {
-    //     fmt.printfln("key: %v, value: %v", key, value)
-    // }
-
     // player
     anim_start := ANIMATION_NAME.IDLE
     anim_start_ctring := get_animation_string(anim_start)
