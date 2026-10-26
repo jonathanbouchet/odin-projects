@@ -17,6 +17,7 @@ TILE_Z :: 10
 TILE_Y :: 2
 
 Layer_Data :: struct {
+    // struct should match the keys in the JSON file
     data: [100]i32,
     direction: string,
 }
@@ -52,6 +53,12 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
 }
 
 draw_floor:: proc(floor: rl.Model) {
+    /*
+    - draw a "floor" for a given TILE_X and TILE_Z numbers
+    - hardcoded for now, knowing the map is 10x10 tiles in X-Z plane
+    - 1 'tile' is 1 3D unit: texture is mapped to a Cube Mesh wih dimension: rl.GenMeshCube(1.0, 1.0, 0.01)
+    - y-position is fixed to 0 since this is the floor
+    */
     x: f32
     y: f32 = 0.0
     z: f32
@@ -65,6 +72,10 @@ draw_floor:: proc(floor: rl.Model) {
 }
 
 draw_wall :: proc(wall: rl.Model, dir: Direction) {
+    /*
+    - similar to draw_floor but for walls.
+    - each direction keeps a X (LEFT or RIGHT) or Z constant (back)
+    */
     x: f32
     y: f32
     z: f32
@@ -114,35 +125,6 @@ main :: proc() {
     mem.tracking_allocator_init(&tracking, context.allocator)
     context.allocator = mem.tracking_allocator(&tracking)
 
-    // defer {
-    //     fmt.printfln(
-    //         "Current memory: %d bytes, peak memory: %d bytes",
-    //         tracking.current_memory_allocated,
-    //         tracking.peak_memory_allocated,
-    //     )
-
-    //     if len(tracking.allocation_map) > 0 {
-    //         fmt.eprintln("Unfreed allocations:")
-
-    //         for _, entry in tracking.allocation_map {
-    //             fmt.eprintf(
-    //                 "- %d bytes @ %v\n",
-    //                 entry.size,
-    //                 entry.location,
-    //             )
-    //         }
-    //     }
-
-    //     mem.tracking_allocator_destroy(&tracking)
-    // }
-
-    // // Track allocations made through context.allocator.
-    // tracking: mem.Tracking_Allocator
-    // mem.tracking_allocator_init(&tracking, context.allocator)
-
-    // // Any allocation using context.allocator is now tracked.
-    // context.allocator = mem.tracking_allocator(&tracking)
-
     defer {
         fmt.println("Memory statistics:")
         fmt.printfln("  Current:   %d bytes", tracking.current_memory_allocated)
@@ -187,13 +169,10 @@ main :: proc() {
 
     level_data := read_input_data("level.json", Level_Data)
     fmt.printfln("level data: %v", level_data.level)
-    // for i in 0..<len(level_data.level){
-    //     defer delete(level_data.level[i].direction)
-    // }
-    defer delete(level_data.level[0].direction)
-    defer delete(level_data.level[1].direction)
-    defer delete(level_data.level[2].direction)
-    defer delete(level_data.level)
+    // delete level_data at the end of the program
+    // level.data is not dynamically allocated so no need to delete it
+    // we need to delete level.direction though, see end of the program
+    defer delete(level_data.level) 
 
     wall_texture := rl.LoadTexture("assets/ROUNDBRICKS.png") // 32x32 pixels
     // wall_texture := rl.LoadTexture("assets/wall_test.png") // 32x32 pixels
@@ -224,7 +203,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         // update
         dt := rl.GetFrameTime()
-        rl.UpdateCamera(&camera, .FIRST_PERSON)
+        // rl.UpdateCamera(&camera, .FIRST_PERSON)
 
         // render
         rl.BeginDrawing()
@@ -236,13 +215,12 @@ main :: proc() {
 
         // draw back wall
         // draw_wall(wall, .BACK)
-        // test: select a given layer
+        // test: select a given layer and place tiles according the level.json
         for layer in level_data.level {
             // fmt.printfln("layer: %v", layer)
             // fmt.printf("direction: %v, type: %v\n", layer.direction, typeid_of(type_of(layer.direction)))
             test_string: string = "back"
             if strings.compare(layer.direction, test_string) == 0 {
-                // fmt.printfln("selected direction: %v", layer.direction)
                 back_data := layer.data
                 i, j, k: i32
                 x, y, z: f32
@@ -272,7 +250,8 @@ main :: proc() {
         rl.EndDrawing()
     }
     rl.CloseWindow()
-    // for i in 0..<len(level_data.level){
-    //     defer delete(level_data.level[i].direction)
-    // }
+
+    for i in 0..<len(level_data.level){
+        delete(level_data.level[i].direction)
+    }
 }
