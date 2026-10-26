@@ -56,7 +56,7 @@ read_input_data :: proc(filepath: string, $T: typeid) -> T {
 
 extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
     /*
-    - convert a Tiled layer data to a Texture_Layer
+    - extract a particular Texture_Layer given a layer_id
     */
     current_layer: ^Texture_Layer = nil
     for &layer in data.layers {
