@@ -8,9 +8,10 @@ import rl "vendor:raylib"
 import "core:encoding/json"
 
 WIDTH :: 640
-HEIGHT :: 640
+HEIGHT :: 380
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
+BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255 } // light black
 GREEN :: rl.Color{57, 255, 20, 255}
 TILE_X :: 10
 TILE_Z :: 10
@@ -174,10 +175,11 @@ main :: proc() {
     // we need to delete level.direction though, see end of the program
     defer delete(level_data.level) 
 
-    wall_texture := rl.LoadTexture("assets/ROUNDBRICKS.png") // 32x32 pixels
+    // wall_texture := rl.LoadTexture("assets/ROUNDBRICKS.png") // 32x32 pixels
     // wall_texture := rl.LoadTexture("assets/wall_test.png") // 32x32 pixels
     // wall_texture := rl.LoadTexture("assets/wall_test_64x64.png") // 64x64 pixels
     //wall_texture := rl.LoadTexture("assets/wall_test_GB_colors_32x32.png") // 32x32 pixels GB colors
+    wall_texture := rl.LoadTexture("assets/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
 
     floor_texture := rl.LoadTexture("assets/FLATSTONES.png") // 32x32 pixels
@@ -189,10 +191,17 @@ main :: proc() {
     floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
     floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
 
-    // camera
+    player := Player{
+        position = rl.Vector3{0, 0, 0},
+        // direction = rl.Vector3{1, 0, 1},
+        speed = 5,
+        eyes = 1,
+        yaw = 0.0,
+        pitch = 0.0,
+        sensitivity = 0.003,
+    }
+
     camera := rl.Camera3D{
-        position   = { 0.2, 1.0, 0.2 },  // Camera position
-        target     = { 0.185, 1.0, -10.0 },// Camera looking at point
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
         fovy       = 60.0,               // Camera field-of-view Y
         projection = .PERSPECTIVE,       // Camera projection type
@@ -203,15 +212,15 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         // update
         dt := rl.GetFrameTime()
-        // rl.UpdateCamera(&camera, .FIRST_PERSON)
+        update_player(&player, &camera)
 
         // render
         rl.BeginDrawing()
-        rl.ClearBackground(BACKGROUND)
+        rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
         // draw floor
-        draw_floor(floor)
+        // draw_floor(floor)
 
         // draw back wall
         // draw_wall(wall, .BACK)
