@@ -148,7 +148,7 @@ main :: proc () {
     defer rl.UnloadTexture(background_animated_3)
 
     camera := rl.Camera2D{
-        zoom = 1.5,
+        zoom = 1.0,
         offset = {f32(rl.GetScreenWidth()/2), WIDTH/2},
         target = cat_pos, 
     }
