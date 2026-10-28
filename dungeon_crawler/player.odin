@@ -48,7 +48,8 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
     // clamp pitch to avoid flipping over the top/bottom
     max_pitch:f32 = math.PI / 2.0 - 0.01
     player.pitch = clamp_f32(player.pitch, -max_pitch, max_pitch)
-    player.pitch = 0
+    // freeze the vertical camera movement
+    // player.pitch = 0
 
     // handle movement input
     move_speed := player.speed * rl.GetFrameTime()

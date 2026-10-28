@@ -182,7 +182,8 @@ main :: proc() {
     wall_texture := rl.LoadTexture("assets/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
 
-    floor_texture := rl.LoadTexture("assets/FLATSTONES.png") // 32x32 pixels
+    // floor_texture := rl.LoadTexture("assets/FLATSTONES.png") // 32x32 pixels
+    floor_texture := rl.LoadTexture("assets/floor_minimalist_32x32.png") // 32x32 pixels
     defer rl.UnloadTexture(floor_texture)
 
     wall := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.01)) // z-coordinate flat
@@ -220,7 +221,7 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         // draw floor
-        // draw_floor(floor)
+        draw_floor(floor)
 
         // draw back wall
         // draw_wall(wall, .BACK)
