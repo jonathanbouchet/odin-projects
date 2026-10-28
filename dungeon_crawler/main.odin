@@ -3,7 +3,6 @@ package main
 import "core:os"
 import "core:mem"
 import "core:fmt"
-import "core:strings"
 import rl "vendor:raylib"
 import "core:encoding/json"
 
@@ -64,12 +63,12 @@ draw_floor:: proc(floor: rl.Model) {
     y: f32 = 0.0
     z: f32
     for i in 0..<TILE_X {
-            for k in 0..<TILE_Z{
-                x = -4.5 + f32(i*1.0)
-                z = -4.5 + f32(k*1.0)
-                rl.DrawModelEx(floor, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-            }
+        for k in 0..<TILE_Z{
+            x = -4.5 + f32(i*1.0)
+            z = -4.5 + f32(k*1.0)
+            rl.DrawModelEx(floor, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
         }
+    }
 }
 
 draw_wall :: proc(wall: rl.Model, dir: Direction) {
@@ -108,6 +107,22 @@ draw_wall :: proc(wall: rl.Model, dir: Direction) {
             }
         }
     } 
+}
+
+draw_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model){
+    i, j, k: i32
+    x, y, z: f32
+    data := texture_layer.data
+    for id in 0..<len(data){
+        if data[id] > 0 {
+            j = i32(id/10)
+            i = i32(id) - j*10
+            x = -4.5 + f32(i*1.0)
+            y = 0
+            z = -4.5 + f32(j*1.0)
+            rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+        }
+    }
 }
 
 draw_debug :: proc() {
@@ -170,16 +185,21 @@ main :: proc() {
 
     // read input data
     map_data := read_input_data("assets/maps/dungeon_crawler_minimalist.tmj", Map_Data)
-    // delete the dynamically alocated fields
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
+    fmt.println("raw data: %v", map_data)
 
     floor_layer: ^Texture_Layer = nil
     wall_layer: ^Texture_Layer = nil
+    room_layer: ^Texture_Layer = nil
 
     floor_layer = extract_layer_data(map_data, 1)
-    wall_layer = extract_layer_data(map_data, 3)
+    defer delete(floor_layer.name)
+    wall_layer = extract_layer_data(map_data, 2)
+    defer delete(wall_layer.name)
+    room_layer = extract_layer_data(map_data, 3)
+    defer delete(room_layer.name)
 
     if floor_layer != nil {
         fmt.println("Found layer:", floor_layer.name)
@@ -195,21 +215,9 @@ main :: proc() {
     fmt.printfln("wall layer: %v", wall_layer)
     fmt.println(typeid_of(type_of(wall_layer)))
 
-    level_data := read_data("level.json", Level_Data)
-    fmt.printfln("level data: %v", level_data.level)
-    // delete level_data at the end of the program
-    // level.data is not dynamically allocated so no need to delete it
-    // we need to delete level.direction though, see end of the program
-    defer delete(level_data.level) 
-
-    // wall_texture := rl.LoadTexture("assets/textures/ROUNDBRICKS.png") // 32x32 pixels
-    // wall_texture := rl.LoadTexture("assets/textures/wall_test.png") // 32x32 pixels
-    // wall_texture := rl.LoadTexture("assets/textures/wall_test_64x64.png") // 64x64 pixels
-    //wall_texture := rl.LoadTexture("assets/textures/wall_test_GB_colors_32x32.png") // 32x32 pixels GB colors
     wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
 
-    // floor_texture := rl.LoadTexture("assets/textures/FLATSTONES.png") // 32x32 pixels
     floor_texture := rl.LoadTexture("assets/textures/floor_minimalist_32x32.png") // 32x32 pixels
     defer rl.UnloadTexture(floor_texture)
 
@@ -221,7 +229,6 @@ main :: proc() {
 
     player := Player{
         position = rl.Vector3{0, 0, 0},
-        // direction = rl.Vector3{1, 0, 1},
         speed = 5,
         eyes = 1,
         yaw = 0.0,
@@ -248,34 +255,12 @@ main :: proc() {
         rl.BeginMode3D(camera)
 
         // draw floor
-        draw_floor(floor)
+        // draw_floor(floor)
 
         // draw back wall
         draw_wall(wall, .BACK)
-        // test: select a given layer and place tiles according the level.json
-        // for layer in level_data.level {
-        //     // fmt.printfln("layer: %v", layer)
-        //     // fmt.printf("direction: %v, type: %v\n", layer.direction, typeid_of(type_of(layer.direction)))
-        //     test_string: string = "back"
-        //     if strings.compare(layer.direction, test_string) == 0 {
-        //         back_data := layer.data
-        //         i, j, k: i32
-        //         x, y, z: f32
-        //         for jj in 0..<TILE_Y{
-        //             for id in 0..<len(back_data){
-        //                 if back_data[id] > 0 {
-        //                     j = i32(id/10)
-        //                     i = i32(id) - j*10
-        //                     x = -4.5 + f32(i*1.0)
-        //                     y = 0.5 + f32(jj*1.0)
-        //                     z = -5.0
-        //                     rl.DrawModelEx(wall, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-        //                 }
-        //             }
-        //         }
-        //     }
-        // }
-
+        draw_layer_from_map(floor_layer^, floor)
+     
         // draw left wall
         draw_wall(wall, .LEFT)
 
@@ -287,8 +272,4 @@ main :: proc() {
         rl.EndDrawing()
     }
     rl.CloseWindow()
-
-    for i in 0..<len(level_data.level){
-        delete(level_data.level[i].direction)
-    }
 }
