@@ -1,10 +1,8 @@
 package main
 
-import "core:os"
 import "core:mem"
 import "core:fmt"
 import rl "vendor:raylib"
-import "core:encoding/json"
 
 WIDTH :: 640
 HEIGHT :: 380
@@ -31,6 +29,14 @@ Direction :: enum{
     RIGHT,
     BACK,
     FRONT,
+}
+
+Flame_Animation :: struct {
+    frames: [4]rl.Model,
+    position: rl.Vector3,
+    animation_frame_length: f32,  // duration of a single animation frame
+    animation_current_frame: i32, // index of the frame/png in the current animation
+    run_frame_timer: f32,         // how long the current frame has been displayed, in seconds
 }
 
 read_data :: proc(filepath: string, $T: typeid) -> T {
@@ -128,6 +134,32 @@ draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model)
             rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
         }
     }
+}
+
+draw_flames :: proc(fl: ^Flame_Animation) {
+    frame_count := len(fl.frames)
+    fl.run_frame_timer += rl.GetFrameTime()
+
+    if frame_count == 0 {
+        return
+    }
+
+    if frame_count > 1 && fl.animation_frame_length > 0 &&
+       fl.run_frame_timer >= fl.animation_frame_length {
+        fl.run_frame_timer -= fl.animation_frame_length
+        fl.animation_current_frame =
+            (fl.animation_current_frame + 1) % i32(frame_count)
+    }
+
+    rl.DrawModelEx(
+        fl.frames[fl.animation_current_frame], 
+        fl.position, 
+        rl.Vector3{0, 0, 1}, 
+        180.0, 
+        1.0, 
+        rl.RAYWHITE,
+    )
+
 }
 
 draw_debug :: proc() {
@@ -249,6 +281,40 @@ main :: proc() {
     floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
     floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
 
+    flames: [4]rl.Model
+    f00 := rl.LoadTexture("assets/textures/flame/frame_000.png") // 32x32 pixels
+    defer rl.UnloadTexture(f00)
+    f0 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f0.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f00
+
+    f01 := rl.LoadTexture("assets/textures/flame/frame_001.png") // 32x32 pixels
+    defer rl.UnloadTexture(f01)
+    f1 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f1.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f01
+
+    f02 := rl.LoadTexture("assets/textures/flame/frame_002.png") // 32x32 pixels
+    defer rl.UnloadTexture(f02)
+    f2 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f2.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f02
+
+    f03 := rl.LoadTexture("assets/textures/flame/frame_003.png") // 32x32 pixels
+    defer rl.UnloadTexture(f03)
+    f3 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f3.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f03
+
+    flames[0] = f0
+    flames[1] = f1
+    flames[2] = f2
+    flames[3] = f3
+
+    flame := Flame_Animation{
+        frames = flames,
+        position = {0, 0.5, 0},
+        animation_frame_length = 0.2,
+        animation_current_frame = 0,
+        run_frame_timer = 0.0,
+    }
+
     // m := make(map[int]rl.Model)
     // defer delete(m)
     // m[0] = wall
@@ -274,7 +340,6 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        dt := rl.GetFrameTime()
         update_player(&player, &camera)
 
         // render
@@ -286,6 +351,7 @@ main :: proc() {
         draw_wall_layer_from_map(left_wall_layer^, wall, .LEFT)
         draw_wall_layer_from_map(right_wall_layer^, wall, .RIGHT)
         draw_floor_layer_from_map(floor_layer^, floor)
+        draw_flames(&flame)
 
         rl.EndMode3D()
         draw_debug()
