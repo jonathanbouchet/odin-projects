@@ -145,6 +145,25 @@ draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, 
                 }
             }
         }
+    } else if dir == .RIGHT {
+        i, j, k: i32
+        x, y, z: f32
+        data := texture_layer.data
+        for jj in 0..<TILE_Y{
+            for id in 0..<len(data){
+                if data[id] > 0 {
+                    j = i32(id/10)
+                    i = i32(id) - j*10
+                    // x = -4.5 + f32(i*1.0)
+                    // y = 0.5 + f32(jj*1.0)
+                    // z = -5.0
+                    x = 5.0
+                    y = 0.5 + f32(jj*1.0)
+                    z = -4.5 + f32(j*1.0)
+                    rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{0, 1, 0}, 90.0, 1.0, rl.RAYWHITE)
+                }
+            }
+        }
     }
 }
 
@@ -323,6 +342,7 @@ main :: proc() {
         // draw_wall(wall, .BACK)
         draw_wall_layer_from_map(back_wall_layer^, wall, .BACK)
         draw_wall_layer_from_map(left_wall_layer^, wall, .LEFT)
+        draw_wall_layer_from_map(right_wall_layer^, wall, .RIGHT)
         draw_floor_layer_from_map(floor_layer^, floor)
      
         // draw left wall
