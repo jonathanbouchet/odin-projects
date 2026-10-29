@@ -52,64 +52,13 @@ read_data :: proc(filepath: string, $T: typeid) -> T {
     return data
 }
 
-draw_floor:: proc(floor: rl.Model) {
-    /*
+draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, dir: Direction){
+     /*
     - draw a "floor" for a given TILE_X and TILE_Z numbers
     - hardcoded for now, knowing the map is 10x10 tiles in X-Z plane
     - 1 'tile' is 1 3D unit: texture is mapped to a Cube Mesh wih dimension: rl.GenMeshCube(1.0, 1.0, 0.01)
     - y-position is fixed to 0 since this is the floor
     */
-    x: f32
-    y: f32 = 0.0
-    z: f32
-    for i in 0..<TILE_X {
-        for k in 0..<TILE_Z{
-            x = -4.5 + f32(i*1.0)
-            z = -4.5 + f32(k*1.0)
-            rl.DrawModelEx(floor, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-        }
-    }
-}
-
-draw_wall :: proc(wall: rl.Model, dir: Direction) {
-    /*
-    - similar to draw_floor but for walls.
-    - each direction keeps a X (LEFT or RIGHT) or Z constant (back)
-    */
-    x: f32
-    y: f32
-    z: f32
-    if dir == .BACK {
-        for j in 0..<TILE_Y{
-            for i in 0..<TILE_X {
-                x = -4.5 + f32(i*1.0)
-                y = 0.5 + f32(j*1.0)
-                z = -5.0
-                rl.DrawModelEx(wall, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-            }
-        }
-    } else if dir == .LEFT{
-        for j in 0..<TILE_Y{
-            for k in 0..<TILE_Z {
-                x = -5.0
-                y = 0.5 + f32(j*1.0)
-                z = -4.5 + f32(k*1.0)
-                rl.DrawModelEx(wall, rl.Vector3{x, y, z}, rl.Vector3{0, 1, 0}, 90.0, 1.0, rl.RAYWHITE)
-            }
-        }
-    } else if dir == .RIGHT{
-        for j in 0..<TILE_Y{
-            for k in 0..<TILE_Z {
-                x = 5.0
-                y = 0.5 + f32(j*1.0)
-                z = -4.5 + f32(k*1.0)
-                rl.DrawModelEx(wall, rl.Vector3{x, y, z}, rl.Vector3{0, 1, 0}, 90.0, 1.0, rl.RAYWHITE)
-            }
-        }
-    } 
-}
-
-draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, dir: Direction){
     if dir == .BACK{
         i, j, k: i32
         x, y, z: f32
@@ -135,9 +84,6 @@ draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, 
                 if data[id] > 0 {
                     j = i32(id/10)
                     i = i32(id) - j*10
-                    // x = -4.5 + f32(i*1.0)
-                    // y = 0.5 + f32(jj*1.0)
-                    // z = -5.0
                     x = -5.0
                     y = 0.5 + f32(jj*1.0)
                     z = -4.5 + f32(j*1.0)
@@ -154,9 +100,6 @@ draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, 
                 if data[id] > 0 {
                     j = i32(id/10)
                     i = i32(id) - j*10
-                    // x = -4.5 + f32(i*1.0)
-                    // y = 0.5 + f32(jj*1.0)
-                    // z = -5.0
                     x = 5.0
                     y = 0.5 + f32(jj*1.0)
                     z = -4.5 + f32(j*1.0)
@@ -168,6 +111,10 @@ draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, 
 }
 
 draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model){
+     /*
+    - similar to draw_floor but for walls.
+    - each direction keeps a X (LEFT or RIGHT) or Z constant (back)
+    */
     i, j, k: i32
     x, y, z: f32
     data := texture_layer.data
@@ -335,21 +282,10 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
-        // draw floor
-        // draw_floor(floor)
-
-        // draw back wall
-        // draw_wall(wall, .BACK)
         draw_wall_layer_from_map(back_wall_layer^, wall, .BACK)
         draw_wall_layer_from_map(left_wall_layer^, wall, .LEFT)
         draw_wall_layer_from_map(right_wall_layer^, wall, .RIGHT)
         draw_floor_layer_from_map(floor_layer^, floor)
-     
-        // draw left wall
-        // draw_wall(wall, .LEFT)
-
-        // draw right wall
-        // draw_wall(wall,. RIGHT)
 
         rl.EndMode3D()
         draw_debug()
