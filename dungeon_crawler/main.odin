@@ -80,7 +80,7 @@ draw_wall :: proc(wall: rl.Model, dir: Direction) {
     y: f32
     z: f32
     if dir == .BACK {
-    for j in 0..<TILE_Y{
+        for j in 0..<TILE_Y{
             for i in 0..<TILE_X {
                 x = -4.5 + f32(i*1.0)
                 y = 0.5 + f32(j*1.0)
@@ -109,7 +109,46 @@ draw_wall :: proc(wall: rl.Model, dir: Direction) {
     } 
 }
 
-draw_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model){
+draw_wall_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model, dir: Direction){
+    if dir == .BACK{
+        i, j, k: i32
+        x, y, z: f32
+        data := texture_layer.data
+        for jj in 0..<TILE_Y{
+            for id in 0..<len(data){
+                if data[id] > 0 {
+                    j = i32(id/10)
+                    i = i32(id) - j*10
+                    x = -4.5 + f32(i*1.0)
+                    y = 0.5 + f32(jj*1.0)
+                    z = -5.0
+                    rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
+                }
+            }
+        }
+    } else if dir == .LEFT {
+        i, j, k: i32
+        x, y, z: f32
+        data := texture_layer.data
+        for jj in 0..<TILE_Y{
+            for id in 0..<len(data){
+                if data[id] > 0 {
+                    j = i32(id/10)
+                    i = i32(id) - j*10
+                    // x = -4.5 + f32(i*1.0)
+                    // y = 0.5 + f32(jj*1.0)
+                    // z = -5.0
+                    x = -5.0
+                    y = 0.5 + f32(jj*1.0)
+                    z = -4.5 + f32(j*1.0)
+                    rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{0, 1, 0}, 90.0, 1.0, rl.RAYWHITE)
+                }
+            }
+        }
+    }
+}
+
+draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model){
     i, j, k: i32
     x, y, z: f32
     data := texture_layer.data
@@ -184,36 +223,53 @@ main :: proc() {
     rl.SetTargetFPS(FPS)
 
     // read input data
-    map_data := read_input_data("assets/maps/dungeon_crawler_minimalist.tmj", Map_Data)
+    map_data := read_input_data("assets/maps/dungeon_crawler_minimalist_v2.tmj", Map_Data)
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
-    fmt.println("raw data: %v", map_data)
+    fmt.printfln("raw data: %v", map_data)
 
     floor_layer: ^Texture_Layer = nil
-    wall_layer: ^Texture_Layer = nil
+    back_wall_layer: ^Texture_Layer = nil
+    right_wall_layer: ^Texture_Layer = nil
+    left_wall_layer: ^Texture_Layer = nil
     room_layer: ^Texture_Layer = nil
 
     floor_layer = extract_layer_data(map_data, 1)
     defer delete(floor_layer.name)
-    wall_layer = extract_layer_data(map_data, 2)
-    defer delete(wall_layer.name)
-    room_layer = extract_layer_data(map_data, 3)
+
+    back_wall_layer = extract_layer_data(map_data, 4)
+    defer delete(back_wall_layer.name)
+
+    left_wall_layer = extract_layer_data(map_data, 2)
+    defer delete(left_wall_layer.name)
+
+    right_wall_layer = extract_layer_data(map_data, 3)
+    defer delete(right_wall_layer.name)
+
+    room_layer = extract_layer_data(map_data, 5)
     defer delete(room_layer.name)
 
     if floor_layer != nil {
-        fmt.println("Found layer:", floor_layer.name)
+        fmt.println("Found floor layer:", floor_layer.name)
     }
 
-    if wall_layer != nil {
-        fmt.println("Found layer:", wall_layer.name)
+    if back_wall_layer != nil {
+        fmt.println("Found back layer:", back_wall_layer.name)
+    }
+
+    if left_wall_layer != nil {
+        fmt.println("Found left layer:", left_wall_layer.name)
     }
 
     fmt.printfln("floor layer: %v", floor_layer)
     fmt.println(typeid_of(type_of(floor_layer))) 
 
-    fmt.printfln("wall layer: %v", wall_layer)
-    fmt.println(typeid_of(type_of(wall_layer)))
+    fmt.printfln("back wall layer: %v", back_wall_layer)
+    fmt.println(typeid_of(type_of(back_wall_layer)))
+
+    fmt.printfln("left wall layer: %v", left_wall_layer)
+    fmt.println(typeid_of(type_of(left_wall_layer)))
 
     wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
@@ -226,6 +282,12 @@ main :: proc() {
 
     floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
     floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
+
+    // m := make(map[int]rl.Model)
+    // defer delete(m)
+    // m[0] = wall
+    // m[1] = floor
+    // fmt.println("map between index from level and model:%v", m)
 
     player := Player{
         position = rl.Vector3{0, 0, 0},
@@ -258,14 +320,16 @@ main :: proc() {
         // draw_floor(floor)
 
         // draw back wall
-        draw_wall(wall, .BACK)
-        draw_layer_from_map(floor_layer^, floor)
+        // draw_wall(wall, .BACK)
+        draw_wall_layer_from_map(back_wall_layer^, wall, .BACK)
+        draw_wall_layer_from_map(left_wall_layer^, wall, .LEFT)
+        draw_floor_layer_from_map(floor_layer^, floor)
      
         // draw left wall
-        draw_wall(wall, .LEFT)
+        // draw_wall(wall, .LEFT)
 
         // draw right wall
-        draw_wall(wall,. RIGHT)
+        // draw_wall(wall,. RIGHT)
 
         rl.EndMode3D()
         draw_debug()
