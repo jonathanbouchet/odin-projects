@@ -284,22 +284,22 @@ main :: proc() {
     flames: [4]rl.Model
     f00 := rl.LoadTexture("assets/textures/flame/frame_000.png") // 32x32 pixels
     defer rl.UnloadTexture(f00)
-    f0 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f0 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
     f0.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f00
 
     f01 := rl.LoadTexture("assets/textures/flame/frame_001.png") // 32x32 pixels
     defer rl.UnloadTexture(f01)
-    f1 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f1 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
     f1.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f01
 
     f02 := rl.LoadTexture("assets/textures/flame/frame_002.png") // 32x32 pixels
     defer rl.UnloadTexture(f02)
-    f2 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f2 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
     f2.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f02
 
     f03 := rl.LoadTexture("assets/textures/flame/frame_003.png") // 32x32 pixels
     defer rl.UnloadTexture(f03)
-    f3 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.001)) // y-coordinate flat
+    f3 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
     f3.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f03
 
     flames[0] = f0
@@ -310,7 +310,7 @@ main :: proc() {
     flame := Flame_Animation{
         frames = flames,
         position = {0, 0.5, 0},
-        animation_frame_length = 0.2,
+        animation_frame_length = 0.1,
         animation_current_frame = 0,
         run_frame_timer = 0.0,
     }
@@ -332,6 +332,7 @@ main :: proc() {
 
     camera := rl.Camera3D{
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
+        target     = { 0.0, 1.0, 10.0},
         fovy       = 60.0,               // Camera field-of-view Y
         projection = .PERSPECTIVE,       // Camera projection type
     }
