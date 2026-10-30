@@ -2,6 +2,7 @@ package main
 
 import "core:mem"
 import "core:fmt"
+import "core:strings"
 import rl "vendor:raylib"
 
 WIDTH :: 640
@@ -134,6 +135,23 @@ draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model)
             rl.DrawModelEx(model, rl.Vector3{x, y, z}, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
         }
     }
+}
+
+load_flames :: proc() -> [4]rl.Model {
+    fl: [4]rl.Model
+    for i in 0..<4 {
+        path := fmt.tprintf("%s%d.png", "assets/textures/flame/frame_00", i)
+        fmt.printfln("i%v, path:%v", i, path)
+        path_cstring := strings.clone_to_cstring(path)
+        defer delete(path_cstring)
+        t := rl.LoadTexture(path_cstring)
+        fmt.printfln("width: %v, height:%v", t.width, t.height)
+        // defer rl.UnloadTexture(t)
+        m := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001))
+        m.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = t
+        fl[i] = m
+    }
+    return fl
 }
 
 draw_flames :: proc(fl: ^Flame_Animation) {
@@ -281,31 +299,7 @@ main :: proc() {
     floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
     floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
 
-    flames: [4]rl.Model
-    f00 := rl.LoadTexture("assets/textures/flame/frame_000.png") // 32x32 pixels
-    defer rl.UnloadTexture(f00)
-    f0 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
-    f0.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f00
-
-    f01 := rl.LoadTexture("assets/textures/flame/frame_001.png") // 32x32 pixels
-    defer rl.UnloadTexture(f01)
-    f1 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
-    f1.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f01
-
-    f02 := rl.LoadTexture("assets/textures/flame/frame_002.png") // 32x32 pixels
-    defer rl.UnloadTexture(f02)
-    f2 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
-    f2.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f02
-
-    f03 := rl.LoadTexture("assets/textures/flame/frame_003.png") // 32x32 pixels
-    defer rl.UnloadTexture(f03)
-    f3 := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // y-coordinate flat
-    f3.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = f03
-
-    flames[0] = f0
-    flames[1] = f1
-    flames[2] = f2
-    flames[3] = f3
+    flames := load_flames()
 
     flame := Flame_Animation{
         frames = flames,
