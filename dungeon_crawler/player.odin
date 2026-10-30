@@ -49,7 +49,7 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
     max_pitch:f32 = math.PI / 2.0 - 0.01
     player.pitch = clamp_f32(player.pitch, -max_pitch, max_pitch)
     // freeze the vertical camera movement
-    // player.pitch = 0
+    player.pitch = 0
 
     // handle movement input
     move_speed := player.speed * rl.GetFrameTime()

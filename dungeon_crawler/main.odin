@@ -273,6 +273,20 @@ main :: proc() {
         run_frame_timer = 0.0,
     }
 
+    // texture for UI icons - testing
+    heart_full_texture := rl.LoadTexture("assets/textures/Heart_Full_64.png")
+    defer rl.UnloadTexture(heart_full_texture)
+
+    heart_button := Button{
+        texture = heart_full_texture,
+        position = rl.Vector2{f32(rl.GetScreenWidth() - 40), 0}, 
+        rotation = 0.0, 
+        scale = 0.5, 
+        base_color = rl.RAYWHITE,
+        switched_color = rl.DARKGRAY,
+        state_changed = true,
+    }
+
     player := Player{
         position = rl.Vector3{0, 0, 0},
         speed = 5,
@@ -294,6 +308,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         // update
         update_player(&player, &camera)
+        update_button(&heart_button)
 
         // render
         rl.BeginDrawing()
@@ -308,6 +323,10 @@ main :: proc() {
         draw_flames(&flame)
 
         rl.EndMode3D()
+
+        // draw UI icons OUTSIDE mode3D
+        draw_button(heart_button)
+
         draw_debug()
         rl.EndDrawing()
     }

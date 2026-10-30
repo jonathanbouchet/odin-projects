@@ -88,7 +88,7 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
         "BACK" = back_wall_layer,
         "LEFT" = left_wall_layer,
         "RIGHT" = right_wall_layer,
-        "ROOM" = room_layer
+        "ROOM" = room_layer,
     }
 
     return m
