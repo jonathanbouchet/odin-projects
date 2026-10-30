@@ -1,3 +1,4 @@
+#+feature dynamic-literals
 package main
 
 import "core:os"
@@ -56,4 +57,39 @@ extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
         }
     }
     return current_layer
+}
+
+extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
+    // m := make(map[int]^Texture_Layer)
+
+    floor_layer: ^Texture_Layer = nil
+    back_wall_layer: ^Texture_Layer = nil
+    right_wall_layer: ^Texture_Layer = nil
+    left_wall_layer: ^Texture_Layer = nil
+    room_layer: ^Texture_Layer = nil
+
+    floor_layer = extract_layer_data(map_data, 1)
+    defer delete(floor_layer.name)
+
+    back_wall_layer = extract_layer_data(map_data, 4)
+    defer delete(back_wall_layer.name)
+
+    left_wall_layer = extract_layer_data(map_data, 2)
+    defer delete(left_wall_layer.name)
+
+    right_wall_layer = extract_layer_data(map_data, 3)
+    defer delete(right_wall_layer.name)
+
+    room_layer = extract_layer_data(map_data, 5)
+    defer delete(room_layer.name)
+
+    m := map[string]^Texture_Layer{
+        "FLOOR" = floor_layer,
+        "BACK" = back_wall_layer,
+        "LEFT" = left_wall_layer,
+        "RIGHT" = right_wall_layer,
+        "ROOM" = room_layer
+    }
+
+    return m
 }

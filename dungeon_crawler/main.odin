@@ -243,49 +243,13 @@ main :: proc() {
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
-    fmt.printfln("raw data: %v", map_data)
+    // fmt.printfln("raw data: %v", map_data)
 
-    floor_layer: ^Texture_Layer = nil
-    back_wall_layer: ^Texture_Layer = nil
-    right_wall_layer: ^Texture_Layer = nil
-    left_wall_layer: ^Texture_Layer = nil
-    room_layer: ^Texture_Layer = nil
+    layers := extract_all_layers(map_data)
+    // fmt.printfln("layers: %", layers)
+    // fmt.printfln("floor: %v", layers["FLOOR"]^)
 
-    floor_layer = extract_layer_data(map_data, 1)
-    defer delete(floor_layer.name)
-
-    back_wall_layer = extract_layer_data(map_data, 4)
-    defer delete(back_wall_layer.name)
-
-    left_wall_layer = extract_layer_data(map_data, 2)
-    defer delete(left_wall_layer.name)
-
-    right_wall_layer = extract_layer_data(map_data, 3)
-    defer delete(right_wall_layer.name)
-
-    room_layer = extract_layer_data(map_data, 5)
-    defer delete(room_layer.name)
-
-    if floor_layer != nil {
-        fmt.println("Found floor layer:", floor_layer.name)
-    }
-
-    if back_wall_layer != nil {
-        fmt.println("Found back layer:", back_wall_layer.name)
-    }
-
-    if left_wall_layer != nil {
-        fmt.println("Found left layer:", left_wall_layer.name)
-    }
-
-    fmt.printfln("floor layer: %v", floor_layer)
-    fmt.println(typeid_of(type_of(floor_layer))) 
-
-    fmt.printfln("back wall layer: %v", back_wall_layer)
-    fmt.println(typeid_of(type_of(back_wall_layer)))
-
-    fmt.printfln("left wall layer: %v", left_wall_layer)
-    fmt.println(typeid_of(type_of(left_wall_layer)))
+    defer delete(layers)
 
     wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
@@ -308,12 +272,6 @@ main :: proc() {
         animation_current_frame = 0,
         run_frame_timer = 0.0,
     }
-
-    // m := make(map[int]rl.Model)
-    // defer delete(m)
-    // m[0] = wall
-    // m[1] = floor
-    // fmt.println("map between index from level and model:%v", m)
 
     player := Player{
         position = rl.Vector3{0, 0, 0},
@@ -342,10 +300,11 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
-        draw_wall_layer_from_map(back_wall_layer^, wall, .BACK)
-        draw_wall_layer_from_map(left_wall_layer^, wall, .LEFT)
-        draw_wall_layer_from_map(right_wall_layer^, wall, .RIGHT)
-        draw_floor_layer_from_map(floor_layer^, floor)
+        draw_wall_layer_from_map(layers["LEFT"]^, wall, .LEFT)
+        draw_wall_layer_from_map(layers["RIGHT"]^, wall, .RIGHT)
+        draw_wall_layer_from_map(layers["BACK"]^, wall, .BACK)
+        draw_floor_layer_from_map(layers["FLOOR"]^, floor)
+
         draw_flames(&flame)
 
         rl.EndMode3D()
