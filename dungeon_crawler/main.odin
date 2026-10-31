@@ -287,6 +287,9 @@ main :: proc() {
         state_changed = true,
     }
 
+    sword_texture := rl.LoadTexture("assets/textures/sword_minimalist_32x32.png")
+    defer rl.UnloadTexture(sword_texture)
+
     player := Player{
         position = rl.Vector3{0, 0, 0},
         speed = 5,
@@ -294,6 +297,8 @@ main :: proc() {
         yaw = 0.0,
         pitch = 0.0,
         sensitivity = 0.003,
+        sword_spawn_position = rl.Vector2{200.0, 200.0},
+        sword_spawned = false
     }
 
     camera := rl.Camera3D{
@@ -326,6 +331,10 @@ main :: proc() {
 
         // draw UI icons OUTSIDE mode3D
         draw_button(heart_button)
+        // other textures, like sword
+        if player.sword_spawned{
+            rl.DrawTextureEx(sword_texture, player.sword_spawn_position, -25, 5.0, rl.RAYWHITE)
+        }
 
         draw_debug()
         rl.EndDrawing()

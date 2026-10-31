@@ -37,6 +37,8 @@ Player :: struct {
     yaw: f32,
     pitch: f32,
     sensitivity: f32,
+    sword_spawn_position: rl.Vector2,
+    sword_spawned: bool,
 }
 
 update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
@@ -49,7 +51,7 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
     max_pitch:f32 = math.PI / 2.0 - 0.01
     player.pitch = clamp_f32(player.pitch, -max_pitch, max_pitch)
     // freeze the vertical camera movement
-    player.pitch = 0
+    // player.pitch = 0
 
     // handle movement input
     move_speed := player.speed * rl.GetFrameTime()
@@ -80,6 +82,10 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
     if rl.IsKeyDown(.RIGHT) {
         player.position.x -= right.x * move_speed
         player.position.z -= right.z * move_speed
+    }
+
+    if rl.IsMouseButtonPressed(.LEFT){
+        player.sword_spawned = !player.sword_spawned
     }
 
     // attach camera to the player's head/eyes
