@@ -236,6 +236,7 @@ main :: proc() {
     }
     rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, "dungeon")
+    defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
     // read input data
@@ -298,7 +299,7 @@ main :: proc() {
         pitch = 0.0,
         sensitivity = 0.003,
         sword_spawn_position = rl.Vector2{200.0, 200.0},
-        sword_spawned = false
+        sword_spawned = false,
     }
 
     camera := rl.Camera3D{
@@ -339,5 +340,4 @@ main :: proc() {
         draw_debug()
         rl.EndDrawing()
     }
-    rl.CloseWindow()
 }
