@@ -21,6 +21,25 @@ Map_Data :: struct {
     height: i32,
 }
 
+read_data :: proc(filepath: string, $T: typeid) -> T {
+    // as a temporary allocation, use the temp_allocator
+    input_data, ok := os.read_entire_file(filepath, context.temp_allocator)
+    if ok != nil {
+        fmt.eprintln("Failed to read file.")
+        return T{}
+	}
+    // deleting the memory allocated to read the file
+    defer free_all(context.temp_allocator)
+
+	data: T
+	err := json.unmarshal(input_data, &data)
+	if err != nil {
+		fmt.eprintln("Parsing error:", err)
+        return T{}
+	}
+    return data
+}
+
 read_input_data :: proc(filepath: string, $T: typeid) -> T {
     /* 
     - read Tiled exported map to JSON (.tmj extension)
