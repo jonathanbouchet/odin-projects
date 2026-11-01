@@ -6,10 +6,15 @@ import "core:strings"
 import rl "vendor:raylib"
 
 WIDTH :: 640
-HEIGHT :: 380
+HEIGHT :: 400
+WIDTH_UI :: 160
+WIDTH_FULL :: 800
+HEIGHT_FULL:: 400
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
 BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255 } // light black
+BACKGROUND_UI :: rl.Color{251, 185, 84, 255}
+OUTLINE_UI :: rl.Color{122, 48, 69, 255}
 GREEN :: rl.Color{57, 255, 20, 255}
 TILE_X :: 10
 TILE_Z :: 10
@@ -137,6 +142,15 @@ draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model)
     }
 }
 
+draw_ui_panels :: proc(ui_rect: rl.Rectangle, hearts: [3]rl.Texture) {
+    // ui_rect := rl.Rectangle{600,0, 200, 600}
+    rl.DrawRectangleLinesEx(ui_rect, 4, OUTLINE_UI)
+    for i: i32 = 0; i< len(hearts); i+=1{
+        // rl.DrawTextureV(hearts[i], rl.Vector2{f32(600) + f32(i)*f32(hearts[i].width), 0}, rl.RAYWHITE)
+        rl.DrawTextureEx(hearts[i], rl.Vector2{f32(700) + f32(i)*f32(hearts[i].width/2.0), 0}, 0.0, 0.5, rl.RAYWHITE)
+    }
+}
+
 load_flames :: proc() -> [4]rl.Model {
     fl: [4]rl.Model
     for i in 0..<4 {
@@ -235,7 +249,7 @@ main :: proc() {
         mem.tracking_allocator_destroy(&tracking)
     }
     rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
-    rl.InitWindow(WIDTH, HEIGHT, "dungeon")
+    rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon")
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
@@ -274,23 +288,6 @@ main :: proc() {
         run_frame_timer = 0.0,
     }
 
-    // texture for UI icons - testing
-    heart_full_texture := rl.LoadTexture("assets/textures/Heart_Full_64.png")
-    defer rl.UnloadTexture(heart_full_texture)
-
-    heart_button := Button{
-        texture = heart_full_texture,
-        position = rl.Vector2{f32(rl.GetScreenWidth() - 40), 0}, 
-        rotation = 0.0, 
-        scale = 0.5, 
-        base_color = rl.RAYWHITE,
-        switched_color = rl.DARKGRAY,
-        state_changed = true,
-    }
-
-    sword_texture := rl.LoadTexture("assets/textures/sword_minimalist_32x32.png")
-    defer rl.UnloadTexture(sword_texture)
-
     player := Player{
         position = rl.Vector3{0, 0, 0},
         speed = 5,
@@ -298,8 +295,6 @@ main :: proc() {
         yaw = 0.0,
         pitch = 0.0,
         sensitivity = 0.003,
-        sword_spawn_position = rl.Vector2{200.0, 200.0},
-        sword_spawned = false,
     }
 
     camera := rl.Camera3D{
@@ -309,16 +304,30 @@ main :: proc() {
         projection = .PERSPECTIVE,       // Camera projection type
     }
 
+    view_width := WIDTH
+    view_height := HEIGHT
+
+    game_view := rl.LoadRenderTexture(i32(view_width), i32(view_height))
+    defer rl.UnloadRenderTexture(game_view)
+
+    ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
+    hearts:= [3]rl.Texture{
+        rl.LoadTexture("assets/textures/Heart_Full_64.png"),
+        rl.LoadTexture("assets/textures/Heart_Half_64.png"),
+        rl.LoadTexture("assets/textures/Heart_Empty_64.png"),
+    }
+
     rl.DisableCursor() 
 
     for !rl.WindowShouldClose() {
         // update
         update_player(&player, &camera)
-        update_button(&heart_button)
 
         // render
-        rl.BeginDrawing()
+        rl.BeginTextureMode(game_view)
         rl.ClearBackground(BACKGROUND_BLACK)
+        // rl.BeginDrawing()
+        // rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
         draw_wall_layer_from_map(layers["LEFT"]^, wall, .LEFT)
@@ -329,13 +338,21 @@ main :: proc() {
         draw_flames(&flame)
 
         rl.EndMode3D()
+        rl.EndTextureMode()
+
+        rl.BeginDrawing()
+        rl.ClearBackground(BACKGROUND_UI)
 
         // draw UI icons OUTSIDE mode3D
-        draw_button(heart_button)
-        // other textures, like sword
-        if player.sword_spawned{
-            rl.DrawTextureEx(sword_texture, player.sword_spawn_position, -25, 5.0, rl.RAYWHITE)
-        }
+        // draw_button(heart_button)
+        rl.DrawTextureRec(
+            game_view.texture,
+            rl.Rectangle{0, 0, f32(view_width), -f32(view_height)},
+            rl.Vector2{0, 0},
+            rl.WHITE,
+        )
+
+        draw_ui_panels(ui_rect, hearts)
 
         draw_debug()
         rl.EndDrawing()
