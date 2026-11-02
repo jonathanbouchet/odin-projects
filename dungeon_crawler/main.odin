@@ -87,7 +87,7 @@ main :: proc() {
     rl.SetTargetFPS(FPS)
 
     // read input data
-    map_data := read_input_data("assets/maps/test3_10x10.tmj", Map_Data)
+    map_data := read_input_data("assets/maps/test4_10x10.tmj", Map_Data)
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
