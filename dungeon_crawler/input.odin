@@ -21,25 +21,6 @@ Map_Data :: struct {
     height: i32,
 }
 
-read_data :: proc(filepath: string, $T: typeid) -> T {
-    // as a temporary allocation, use the temp_allocator
-    input_data, ok := os.read_entire_file(filepath, context.temp_allocator)
-    if ok != nil {
-        fmt.eprintln("Failed to read file.")
-        return T{}
-	}
-    // deleting the memory allocated to read the file
-    defer free_all(context.temp_allocator)
-
-	data: T
-	err := json.unmarshal(input_data, &data)
-	if err != nil {
-		fmt.eprintln("Parsing error:", err)
-        return T{}
-	}
-    return data
-}
-
 read_input_data :: proc(filepath: string, $T: typeid) -> T {
     /* 
     - read Tiled exported map to JSON (.tmj extension)
@@ -82,32 +63,27 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
     // m := make(map[int]^Texture_Layer)
 
     floor_layer: ^Texture_Layer = nil
-    back_wall_layer: ^Texture_Layer = nil
-    right_wall_layer: ^Texture_Layer = nil
-    left_wall_layer: ^Texture_Layer = nil
-    room_layer: ^Texture_Layer = nil
+    wall_layer: ^Texture_Layer = nil
+    doors_layer: ^Texture_Layer = nil
+    props_layer: ^Texture_Layer = nil
 
     floor_layer = extract_layer_data(map_data, 1)
     defer delete(floor_layer.name)
 
-    back_wall_layer = extract_layer_data(map_data, 4)
-    defer delete(back_wall_layer.name)
+    wall_layer = extract_layer_data(map_data, 2)
+    defer delete(wall_layer.name)
 
-    left_wall_layer = extract_layer_data(map_data, 2)
-    defer delete(left_wall_layer.name)
+    doors_layer = extract_layer_data(map_data, 3)
+    defer delete(doors_layer.name)
 
-    right_wall_layer = extract_layer_data(map_data, 3)
-    defer delete(right_wall_layer.name)
-
-    room_layer = extract_layer_data(map_data, 5)
-    defer delete(room_layer.name)
+    props_layer = extract_layer_data(map_data, 4)
+    defer delete(props_layer.name)
 
     m := map[string]^Texture_Layer{
         "FLOOR" = floor_layer,
-        "BACK" = back_wall_layer,
-        "LEFT" = left_wall_layer,
-        "RIGHT" = right_wall_layer,
-        "ROOM" = room_layer,
+        "WALL" = wall_layer,
+        "DOORS" = doors_layer,
+        "PROPS" = props_layer,
     }
 
     return m

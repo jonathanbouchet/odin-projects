@@ -2,6 +2,7 @@ package main
 
 import "core:mem"
 import "core:fmt"
+import "core:strings"
 import rl "vendor:raylib"
 
 WIDTH :: 640
@@ -12,20 +13,27 @@ HEIGHT_FULL:: 400
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
 BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255 } // light black
-BACKGROUND_UI :: rl.Color{251, 185, 84, 255}
+BACKGROUND_UI :: rl.Color{46, 34, 47, 255}
 OUTLINE_UI :: rl.Color{122, 48, 69, 255}
 GREEN :: rl.Color{57, 255, 20, 255}
 TILE_X :: 10
 TILE_Z :: 10
 TILE_Y :: 2
 
-draw_debug :: proc() {
+draw_debug :: proc(player: Player) {
     /*
     various "debug" utils:
     - draw the FPS number
     - draw lines, h and v, representing the mid-screen
     */
+    player_colliding_str := strings.clone_to_cstring(fmt.tprintf("is colliding: %v", player.is_colliding))
+    defer delete(player_colliding_str)
+    player_pos_str := strings.clone_to_cstring(fmt.tprintf("X:%v, Z:%v", player.position.x, player.position.y))
+    defer delete(player_pos_str)
+
     rl.DrawFPS(0, 0)
+    rl.DrawText(player_pos_str, 0, 20, 20, GREEN)
+    rl.DrawText(player_colliding_str, 0, 40, 20, GREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, GREEN)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, GREEN)
 }
@@ -79,7 +87,7 @@ main :: proc() {
     rl.SetTargetFPS(FPS)
 
     // read input data
-    map_data := read_input_data("assets/maps/dungeon_crawler_minimalist_v2.tmj", Map_Data)
+    map_data := read_input_data("assets/maps/test3_10x10.tmj", Map_Data)
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
@@ -91,35 +99,47 @@ main :: proc() {
 
     defer delete(layers)
 
-    wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v2.png") // 32x32 pixels minimalist
+    wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v3.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
 
     floor_texture := rl.LoadTexture("assets/textures/floor_minimalist_32x32.png") // 32x32 pixels
     defer rl.UnloadTexture(floor_texture)
 
-    wall := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.01)) // z-coordinate flat
+    wall := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 1.0)) // full cube
     wall.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = wall_texture
 
     floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
     floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
 
-    flames := load_flames()
+    door_texture := rl.LoadTexture("assets/textures/door_minimalist_32x32.png") // 32x32 pixels
+    defer rl.UnloadTexture(door_texture)
 
-    flame := Flame_Animation{
-        frames = flames,
-        position = {0, 0.5, 0},
-        animation_frame_length = 0.1,
-        animation_current_frame = 0,
-        run_frame_timer = 0.0,
-    }
+    door := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // z-coordinate flat
+    door.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = door_texture
+
+    // stores walls meshes as BB for collision detection 
+    walls_bb := make_wall_boxes(layers["WALL"]^)
+    defer delete(walls_bb)
+    fmt.printfln("wall bounding boxes: %v", walls_bb[:])
+
+    // flames := load_flames()
+
+    // flame := Flame_Animation{
+    //     frames = flames,
+    //     position = {0, 0.5, 0},
+    //     animation_frame_length = 0.1,
+    //     animation_current_frame = 0,
+    //     run_frame_timer = 0.0,
+    // }
 
     player := Player{
-        position = rl.Vector3{0, 0, 0},
+        position = rl.Vector3{0, 0, 4},
         speed = 5,
         eyes = 1,
         yaw = 0.0,
         pitch = 0.0,
         sensitivity = 0.003,
+        is_colliding = false,
     }
 
     camera := rl.Camera3D{
@@ -146,21 +166,18 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        update_player(&player, &camera)
+        update_player(&player, &camera, walls_bb)
 
         // render
         rl.BeginTextureMode(game_view)
         rl.ClearBackground(BACKGROUND_BLACK)
-        // rl.BeginDrawing()
-        // rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
-        draw_wall_layer_from_map(layers["LEFT"]^, wall, .LEFT)
-        draw_wall_layer_from_map(layers["RIGHT"]^, wall, .RIGHT)
-        draw_wall_layer_from_map(layers["BACK"]^, wall, .BACK)
         draw_floor_layer_from_map(layers["FLOOR"]^, floor)
+        draw_full_wall_from_layer(layers["WALL"]^, wall)
+        draw_doors_from_layer(layers["DOORS"]^, door)
 
-        draw_flames(&flame)
+        // draw_flames(&flame)
 
         rl.EndMode3D()
         rl.EndTextureMode()
@@ -179,7 +196,7 @@ main :: proc() {
 
         draw_ui_panels(ui_rect, hearts)
 
-        draw_debug()
+        draw_debug(player)
         rl.EndDrawing()
     }
 }

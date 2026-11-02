@@ -31,6 +31,17 @@
         },
     ```
     - the final version should be a map generated from `Tiled`
+
+### Current status: 2026-11-01
+- main change is how I convert the map made with `Tiled` to meshes in the game
+- before each wall were a _flat_ `Model`, i.e.:
+```bash
+wall := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.01)) // z-coordinate flat
+``` 
+- but it created some more complication to draw them because I had to disentangle `LEFT`, `RIGHT`, `BACK` walls
+- not each wall is a full cube, meaning the `wall` texture is drawn on each face.
+        - this is not an issue for the face on top because they are not seen
+
 ## Assets
 - each texture is a `32x32` pixels
 

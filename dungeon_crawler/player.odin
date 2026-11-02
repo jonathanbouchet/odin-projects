@@ -1,6 +1,7 @@
 package main
 
 import "core:math"
+import "core:fmt"
 import rl "vendor:raylib"
 
 clamp_f32 :: proc(v, min_value, max_value: f32) -> f32 {
@@ -37,9 +38,19 @@ Player :: struct {
     yaw: f32,
     pitch: f32,
     sensitivity: f32,
+    is_colliding: bool,
 }
 
-update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
+player_bounding_box :: proc(player: Player) -> rl.BoundingBox {
+    // return a rough bounding box around the player current position 
+    player_next_pos := player.position + rl.Vector3{1, 0, 1}
+    return rl.BoundingBox{player.position, player_next_pos}
+}
+
+update_player :: proc (player: ^Player, camera: ^rl.Camera3D, walls_bounding_boxes: [dynamic]rl.BoundingBox) {
+    // reset player collision state
+    player.is_colliding = false
+
     // mouse input
     mouse_delta := rl.GetMouseDelta()
     player.yaw -= mouse_delta.x * player.sensitivity
@@ -94,6 +105,14 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D) {
         math.cos(player.pitch) * math.sin(player.yaw),
         math.sin(player.pitch),
         math.cos(player.pitch) * math.cos(player.yaw),
+    }
+
+    // collision detection
+    for bb in walls_bounding_boxes{
+        if rl.CheckCollisionBoxes(bb, player_bounding_box(player^)){
+            fmt.printfln("collision detected for box: %v", bb)
+            player.is_colliding = true
+        }
     }
 
     camera.target = camera.position + direction
