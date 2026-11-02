@@ -28,12 +28,12 @@ draw_debug :: proc(player: Player) {
     */
     player_colliding_str := strings.clone_to_cstring(fmt.tprintf("is colliding: %v", player.is_colliding))
     defer delete(player_colliding_str)
-    player_pos_str := strings.clone_to_cstring(fmt.tprintf("X:%v, Z:%v", player.position.x, player.position.y))
+    player_pos_str := strings.clone_to_cstring(fmt.tprintf("X:%.2f, Z:%.2f", player.position.x, player.position.z))
     defer delete(player_pos_str)
 
     rl.DrawFPS(0, 0)
     rl.DrawText(player_pos_str, 0, 20, 20, GREEN)
-    rl.DrawText(player_colliding_str, 0, 40, 20, GREEN)
+    rl.DrawText(player_colliding_str, 0, 40, 20, rl.RED if player.is_colliding else GREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, GREEN)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, GREEN)
 }
@@ -91,10 +91,9 @@ main :: proc() {
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
-    // fmt.printfln("raw data: %v", map_data)
 
     layers := extract_all_layers(map_data)
-    // fmt.printfln("layers: %", layers)
+    fmt.printfln("layers: %", layers)
     // fmt.printfln("floor: %v", layers["FLOOR"]^)
 
     defer delete(layers)
@@ -120,17 +119,33 @@ main :: proc() {
     // stores walls meshes as BB for collision detection 
     walls_bb := make_wall_boxes(layers["WALL"]^)
     defer delete(walls_bb)
-    fmt.printfln("wall bounding boxes: %v", walls_bb[:])
+    // fmt.printfln("wall bounding boxes: %v", walls_bb[:])
 
-    // flames := load_flames()
-
-    // flame := Flame_Animation{
-    //     frames = flames,
-    //     position = {0, 0.5, 0},
-    //     animation_frame_length = 0.1,
-    //     animation_current_frame = 0,
-    //     run_frame_timer = 0.0,
-    // }
+    flames := load_flames()
+    num_flames := len(layers["PROPS"].data)
+    flames_animation := make([dynamic]Flame_Animation, 0, num_flames)
+    defer delete(flames_animation)
+    i, j: i32
+    x, y, z: f32
+    data := layers["PROPS"].data
+    min_x: f32 = -TILE_X/2 + 0.5
+    for id in 0..<len(data){
+        if data[id]>0{
+            j = i32(id/10)
+            i = i32(id) - j*10
+            x = min_x + f32(i*1.0)
+            y = 0.5
+            z = min_x + f32(j*1.0)
+            flame := Flame_Animation{
+                frames = flames,
+                position = {x, y, z},
+                animation_frame_length = 0.1,
+                animation_current_frame = 0,
+                run_frame_timer = 0.0,
+            }
+            append(&flames_animation, flame)
+        }
+    } 
 
     player := Player{
         position = rl.Vector3{0, 0, 4},
@@ -178,6 +193,9 @@ main :: proc() {
         draw_doors_from_layer(layers["DOORS"]^, door)
 
         // draw_flames(&flame)
+        for &fl in flames_animation{
+            draw_flames(&fl)
+        }
 
         rl.EndMode3D()
         rl.EndTextureMode()

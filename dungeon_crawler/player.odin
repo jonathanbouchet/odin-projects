@@ -110,7 +110,7 @@ update_player :: proc (player: ^Player, camera: ^rl.Camera3D, walls_bounding_box
     // collision detection
     for bb in walls_bounding_boxes{
         if rl.CheckCollisionBoxes(bb, player_bounding_box(player^)){
-            fmt.printfln("collision detected for box: %v", bb)
+            // fmt.printfln("collision detected for box: %v, player:%v", bb, player_bounding_box(player^))
             player.is_colliding = true
         }
     }
