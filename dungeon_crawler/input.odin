@@ -66,6 +66,7 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
     wall_layer: ^Texture_Layer = nil
     doors_layer: ^Texture_Layer = nil
     props_layer: ^Texture_Layer = nil
+    coins_layer: ^Texture_Layer = nil
 
     floor_layer = extract_layer_data(map_data, 1)
     defer delete(floor_layer.name)
@@ -73,17 +74,21 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
     wall_layer = extract_layer_data(map_data, 2)
     defer delete(wall_layer.name)
 
-    doors_layer = extract_layer_data(map_data, 3)
+    doors_layer = extract_layer_data(map_data, 4)
     defer delete(doors_layer.name)
 
-    props_layer = extract_layer_data(map_data, 4)
+    props_layer = extract_layer_data(map_data, 3)
     defer delete(props_layer.name)
+
+    coins_layer = extract_layer_data(map_data, 5)
+    defer delete(coins_layer.name)
 
     m := map[string]^Texture_Layer{
         "FLOOR" = floor_layer,
         "WALL" = wall_layer,
         "DOORS" = doors_layer,
         "PROPS" = props_layer,
+        "COINS" = coins_layer,
     }
 
     return m

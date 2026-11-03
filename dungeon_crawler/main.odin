@@ -87,7 +87,7 @@ main :: proc() {
     rl.SetTargetFPS(FPS)
 
     // read input data
-    map_data := read_input_data("assets/maps/test4_10x10.tmj", Map_Data)
+    map_data := read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
     fmt.printfln("# of layers: %v", len(map_data.layers))
@@ -121,7 +121,14 @@ main :: proc() {
     defer delete(walls_bb)
     // fmt.printfln("wall bounding boxes: %v", walls_bb[:])
 
-    flames := load_flames()
+    // flames := load_flames()
+    flames := load_animations(
+        path="assets/textures/flame/frame_00", 
+        start_anim=0, 
+        max_anim=4,
+        mesh_cube = [3]f32{1.0, 1.0, 0.0001},
+    )
+    defer delete(flames)
     num_flames := len(layers["PROPS"].data)
     flames_animation := make([dynamic]Flame_Animation, 0, num_flames)
     defer delete(flames_animation)
@@ -144,6 +151,39 @@ main :: proc() {
                 run_frame_timer = 0.0,
             }
             append(&flames_animation, flame)
+        }
+    } 
+
+    // coins := load_coins()
+    coins := load_animations(
+        path="assets/textures/silver_coin/", 
+        start_anim=1, 
+        max_anim=6,
+        mesh_cube = [3]f32{0.5, 0.5, 0.0001},
+    )
+    defer delete(coins)
+    num_coins := len(layers["COINS"].data)
+    coins_animation := make([dynamic]Coin_Animation, 0, num_coins)
+    defer delete(coins_animation)
+    // i, j: i32
+    // x, y, z: f32
+    data = layers["COINS"].data
+    // min_x: f32 = -TILE_X/2 + 0.5
+    for id in 0..<len(data){
+        if data[id]>0{
+            j = i32(id/10)
+            i = i32(id) - j*10
+            x = min_x + f32(i*1.0)
+            y = 0.5
+            z = min_x + f32(j*1.0)
+            coin := Coin_Animation{
+                frames = coins,
+                position = {x, y, z},
+                animation_frame_length = 0.2,
+                animation_current_frame = 0,
+                run_frame_timer = 0.0,
+            }
+            append(&coins_animation, coin)
         }
     } 
 
@@ -201,6 +241,10 @@ main :: proc() {
         // draw_flames(&flame)
         for &fl in flames_animation{
             draw_flames(&fl)
+        }
+
+        for &co in coins_animation{
+            draw_coins(&co)
         }
 
         rl.EndMode3D()
