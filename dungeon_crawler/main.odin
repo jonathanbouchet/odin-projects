@@ -149,6 +149,7 @@ main :: proc() {
 
     player := Player{
         position = rl.Vector3{0, 0, 4},
+        velocity = {},
         speed = 5,
         eyes = 1,
         yaw = 0.0,
@@ -191,6 +192,11 @@ main :: proc() {
         draw_floor_layer_from_map(layers["FLOOR"]^, floor)
         draw_full_wall_from_layer(layers["WALL"]^, wall)
         draw_doors_from_layer(layers["DOORS"]^, door)
+
+        for bb in walls_bb{
+            center := (bb.max + bb.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+        }
 
         // draw_flames(&flame)
         for &fl in flames_animation{

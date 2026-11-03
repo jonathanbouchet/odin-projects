@@ -12,9 +12,9 @@ make_wall_boxes :: proc(texture_layer: Texture_Layer) -> [dynamic]rl.BoundingBox
         if data[id] > 0 {
             j = i32(id/10)
             i = i32(id) - j*10
-            x = min_x + f32(i*1.0)
+            x = min_x + f32(i*1.0) - 0.5
             y = 0.0
-            z = min_x + f32(j*1.0)
+            z = min_x + f32(j*1.0) - 0.5
 
             xx := x + 1.0
             yy:f32 = 1.0
@@ -52,7 +52,8 @@ draw_full_wall_from_layer :: proc(texture_layer: Texture_Layer, model: rl.Model)
     x, y, z: f32
     data := texture_layer.data
     min_x: f32 = -TILE_X/2 + 0.5
-    for jj in 0..<TILE_Y{
+    // for jj in 0..<TILE_Y{
+    for jj in 0..<1{
         for id in 0..<len(data){
             if data[id] > 0 {
                 j = i32(id/10)
