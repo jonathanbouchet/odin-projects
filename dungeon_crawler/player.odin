@@ -1,7 +1,7 @@
 package main
 
 import "core:math"
-import "core:fmt"
+// import "core:fmt"
 import rl "vendor:raylib"
 
 clamp_f32 :: proc(v, min_value, max_value: f32) -> f32 {

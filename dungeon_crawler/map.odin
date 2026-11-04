@@ -2,7 +2,14 @@ package main
 
 import rl "vendor:raylib"
 
-make_wall_boxes :: proc(texture_layer: Texture_Layer) -> [dynamic]rl.BoundingBox {
+make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f32, depth: f32) -> [dynamic]rl.BoundingBox {
+    /*
+    - make an dynamic array of BoundingBoxes of all tiles in that layer
+    - take width(x), height(y), depth(z) as parameters to fit with different tiles:
+        - wall: 1,   1, 1
+        - coin: 1,   1, 1
+        - door: 0.1, 1, 1
+    */
     bb: [dynamic]rl.BoundingBox
     i, j: i32
     x, y, z: f32
@@ -16,9 +23,9 @@ make_wall_boxes :: proc(texture_layer: Texture_Layer) -> [dynamic]rl.BoundingBox
             y = 0.0
             z = min_x + f32(j*1.0) - 0.5
 
-            xx := x + 1.0
-            yy:f32 = 1.0
-            zz := z + 1.0
+            xx := x + width
+            yy:f32 = height
+            zz := z + depth
 
             append(&bb, rl.BoundingBox{rl.Vector3{x, y, z}, rl.Vector3{xx, yy, zz}})
         }
@@ -28,8 +35,9 @@ make_wall_boxes :: proc(texture_layer: Texture_Layer) -> [dynamic]rl.BoundingBox
 
 draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model){
      /*
-    - similar to draw_floor but for walls.
-    - each direction keeps a X (LEFT or RIGHT) or Z constant (back)
+    - extract from the data array the id of the tile
+    - decode the x,y,z position from the indexes
+    - indexes: i, j, k are extract by assuming a 10x10 map
     */
     i, j: i32
     x, y, z: f32
@@ -48,6 +56,12 @@ draw_floor_layer_from_map :: proc(texture_layer: Texture_Layer, model: rl.Model)
 }
 
 draw_full_wall_from_layer :: proc(texture_layer: Texture_Layer, model: rl.Model){
+    /*
+    - extract from the data array the id of the tile
+    - decode the x,y,z position from the indexes
+    - indexes: i, j, k are extract by assuming a 10x10 map
+    - to make a wall of height = 2, use the loop over TILE_Y
+    */
     i, j: i32
     x, y, z: f32
     data := texture_layer.data
@@ -68,6 +82,12 @@ draw_full_wall_from_layer :: proc(texture_layer: Texture_Layer, model: rl.Model)
 }
 
 draw_doors_from_layer :: proc(texture_layer: Texture_Layer, model: rl.Model){
+      /*
+    - extract from the data array the id of the tile
+    - decode the x,y,z position from the indexes
+    - indexes: i, j, k are extract by assuming a 10x10 map
+    - y-position is hard-coded to half a unit
+    */
     i, j: i32
     x, y, z: f32
     data := texture_layer.data

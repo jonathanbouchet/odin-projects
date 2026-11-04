@@ -117,21 +117,27 @@ main :: proc() {
     door.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = door_texture
 
     // stores walls meshes as BB for collision detection 
-    walls_bb := make_wall_boxes(layers["WALL"]^)
+    walls_bb := make_boundary_boxes(
+        texture_layer = layers["WALL"]^, 
+        width = 1.0, 
+        height = 1.0, 
+        depth = 1.0,
+    )
     defer delete(walls_bb)
     // fmt.printfln("wall bounding boxes: %v", walls_bb[:])
 
-    // flames := load_flames()
-    flames := load_animations(
+    flames := make_model_from_animations(
         path="assets/textures/flame/frame_00", 
         start_anim=0, 
         max_anim=4,
         mesh_cube = [3]f32{1.0, 1.0, 0.0001},
     )
     defer delete(flames)
+
     num_flames := len(layers["PROPS"].data)
-    flames_animation := make([dynamic]Flame_Animation, 0, num_flames)
+    flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
     defer delete(flames_animation)
+
     i, j: i32
     x, y, z: f32
     data := layers["PROPS"].data
@@ -143,7 +149,7 @@ main :: proc() {
             x = min_x + f32(i*1.0)
             y = 0.5
             z = min_x + f32(j*1.0)
-            flame := Flame_Animation{
+            flame := Animation_To_Model{
                 frames = flames,
                 position = {x, y, z},
                 animation_frame_length = 0.1,
@@ -154,8 +160,7 @@ main :: proc() {
         }
     } 
 
-    // coins := load_coins()
-    coins := load_animations(
+    coins := make_model_from_animations(
         path="assets/textures/silver_coin/", 
         start_anim=1, 
         max_anim=6,
@@ -165,9 +170,11 @@ main :: proc() {
         mesh_cube = [3]f32{0.5, 0.5, 0.0001},
     )
     defer delete(coins)
+
     num_coins := len(layers["COINS"].data)
-    coins_animation := make([dynamic]Coin_Animation, 0, num_coins)
+    coins_animation := make([dynamic]Animation_To_Model, 0, num_coins)
     defer delete(coins_animation)
+
     // i, j: i32
     // x, y, z: f32
     data = layers["COINS"].data
@@ -179,7 +186,7 @@ main :: proc() {
             x = min_x + f32(i*1.0)
             y = 0.5
             z = min_x + f32(j*1.0)
-            coin := Coin_Animation{
+            coin := Animation_To_Model{
                 frames = coins,
                 position = {x, y, z},
                 animation_frame_length = 0.1,
@@ -190,10 +197,20 @@ main :: proc() {
         }
     } 
 
-    props_bb := make_wall_boxes(layers["COINS"]^)
+    props_bb := make_boundary_boxes(
+        texture_layer = layers["COINS"]^,
+        width = 1.0,
+        height = 1.0,
+        depth = 1.0,
+    )
     defer delete(props_bb)
 
-    doors_bb := make_wall_boxes(layers["DOORS"]^)
+    doors_bb := make_boundary_boxes(
+        texture_layer = layers["DOORS"]^,
+        width = 0.1,
+        height = 1.0,
+        depth = 1.0,
+    )
     defer delete(doors_bb)
 
     player := Player{
@@ -249,21 +266,21 @@ main :: proc() {
 
         for pr in props_bb{
             center := (pr.max + pr.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+            rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
         }
 
         for do_bb in doors_bb{
             center := (do_bb.max + do_bb.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+            rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
         }
 
         // draw_flames(&flame)
         for &fl in flames_animation{
-            draw_flames(&fl)
+            draw_animation_model(&fl)
         }
 
         for &co in coins_animation{
-            draw_coins(&co)
+            draw_animation_model(&co)
         }
 
         rl.EndMode3D()
