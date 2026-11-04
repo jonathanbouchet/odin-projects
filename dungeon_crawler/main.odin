@@ -159,6 +159,9 @@ main :: proc() {
         path="assets/textures/silver_coin/", 
         start_anim=1, 
         max_anim=6,
+        // path="assets/textures/coin/frame_", 
+        // start_anim=1, 
+        // max_anim=7,
         mesh_cube = [3]f32{0.5, 0.5, 0.0001},
     )
     defer delete(coins)
@@ -179,13 +182,19 @@ main :: proc() {
             coin := Coin_Animation{
                 frames = coins,
                 position = {x, y, z},
-                animation_frame_length = 0.2,
+                animation_frame_length = 0.1,
                 animation_current_frame = 0,
                 run_frame_timer = 0.0,
             }
             append(&coins_animation, coin)
         }
     } 
+
+    props_bb := make_wall_boxes(layers["COINS"]^)
+    defer delete(props_bb)
+
+    doors_bb := make_wall_boxes(layers["DOORS"]^)
+    defer delete(doors_bb)
 
     player := Player{
         position = rl.Vector3{0, 0, 4},
@@ -235,6 +244,16 @@ main :: proc() {
 
         for bb in walls_bb{
             center := (bb.max + bb.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+        }
+
+        for pr in props_bb{
+            center := (pr.max + pr.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+        }
+
+        for do_bb in doors_bb{
+            center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
         }
 
