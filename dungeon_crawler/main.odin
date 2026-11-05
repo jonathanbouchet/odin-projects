@@ -86,7 +86,9 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
-    // read input data
+    game := game_init()
+
+    // read input data for 1 map
     map_data := read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
     defer delete(map_data.layers)
     fmt.println(typeid_of(type_of(map_data))) 
@@ -94,9 +96,21 @@ main :: proc() {
 
     layers := extract_all_layers(map_data)
     fmt.printfln("layers: %", layers)
-    // fmt.printfln("floor: %v", layers["FLOOR"]^)
+
+    // // read input data for 1 map
+    // map_data2 := read_input_data("assets/maps/test4_10x10.tmj", Map_Data)
+    // defer delete(map_data2.layers)
+    // // fmt.println(typeid_of(type_of(map_data))) 
+    // fmt.printfln("# of layers: %v", len(map_data2.layers))
+
+    // layers2 := extract_all_layers(map_data2)
+    // fmt.printfln("layers: %", layers)
+
+    // game.level1.layers = layers
+    // game.level2.layers = layers2
 
     defer delete(layers)
+    // defer delete(layers2)
 
     wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v3.png") // 32x32 pixels minimalist
     defer rl.UnloadTexture(wall_texture)
@@ -224,6 +238,8 @@ main :: proc() {
         is_colliding = false,
     }
 
+    game.player = player
+
     camera := rl.Camera3D{
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
         target     = { 0.0, 1.0, 10.0},
@@ -245,6 +261,8 @@ main :: proc() {
     }
 
     rl.DisableCursor() 
+
+    // fmt.printfln("game starts")
 
     for !rl.WindowShouldClose() {
         // update
@@ -274,7 +292,6 @@ main :: proc() {
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
         }
 
-        // draw_flames(&flame)
         for &fl in flames_animation{
             draw_animation_model(&fl)
         }

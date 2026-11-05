@@ -35,24 +35,27 @@ make_model_from_animations :: proc(path: string, start_anim: i32, max_anim: i32,
     return tmp
 }
 
-draw_animation_model :: proc(fl: ^Animation_To_Model) {
-    frame_count := len(fl.frames)
-    fl.run_frame_timer += rl.GetFrameTime()
+draw_animation_model :: proc(am: ^Animation_To_Model) {
+    /*
+    - create an animation of models (props) by looping over all model in the struct
+    */
+    frame_count := len(am.frames)
+    am.run_frame_timer += rl.GetFrameTime()
 
     if frame_count == 0 {
         return
     }
 
-    if frame_count > 1 && fl.animation_frame_length > 0 &&
-       fl.run_frame_timer >= fl.animation_frame_length {
-        fl.run_frame_timer -= fl.animation_frame_length
-        fl.animation_current_frame =
-            (fl.animation_current_frame + 1) % i32(frame_count)
+    if frame_count > 1 && am.animation_frame_length > 0 &&
+       am.run_frame_timer >= am.animation_frame_length {
+        am.run_frame_timer -= am.animation_frame_length
+        am.animation_current_frame =
+            (am.animation_current_frame + 1) % i32(frame_count)
     }
 
     rl.DrawModelEx(
-        fl.frames[fl.animation_current_frame], 
-        fl.position, 
+        am.frames[am.animation_current_frame], 
+        am.position, 
         rl.Vector3{0, 0, 1}, 
         180.0, 
         1.0, 
