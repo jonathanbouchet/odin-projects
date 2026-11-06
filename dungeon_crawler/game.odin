@@ -13,6 +13,8 @@ Game :: struct {
     floor: rl.Model,
     door_texture: rl.Texture,
     door: rl.Model,
+    walls_bb: [dynamic]rl.BoundingBox,
+    doors_bb: [dynamic]rl.BoundingBox,
 }
 
 game_init :: proc() -> Game{
@@ -44,6 +46,20 @@ game_load :: proc(game: ^Game){
     game.door_texture = rl.LoadTexture("assets/textures/door_minimalist_32x32.png") // 32x32 pixels
     game.door = rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // z-coordinate flat
     game.door.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = game.door_texture
+
+    game.walls_bb = make_boundary_boxes(
+        texture_layer = game.level1["WALL"]^, 
+        width = 1.0, 
+        height = 1.0, 
+        depth = 1.0,
+    )
+
+    game.doors_bb = make_boundary_boxes(
+        texture_layer = game.level1["DOORS"]^,
+        width = 0.1,
+        height = 1.0,
+        depth = 1.0,
+    )
 }
 
 draw_game :: proc(game: Game){

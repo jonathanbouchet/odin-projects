@@ -93,24 +93,8 @@ main :: proc() {
 
     defer delete(game.map_data1.layers)
     defer delete(game.level1)
-
-    fmt.printfln("game: %v", game)
-
-    // stores walls meshes as BB for collision detection 
-    walls_bb := make_boundary_boxes(
-        texture_layer = game.level1["WALL"]^, 
-        width = 1.0, 
-        height = 1.0, 
-        depth = 1.0,
-    )
-    // walls_bb := make_boundary_boxes(
-    //     texture_layer = layers["WALL"]^, 
-    //     width = 1.0, 
-    //     height = 1.0, 
-    //     depth = 1.0,
-    // )
-    defer delete(walls_bb)
-    fmt.printfln("wall bounding boxes: %v", walls_bb[:])
+    defer delete(game.walls_bb)
+    fmt.printfln("wall bounding boxes: %v", game.walls_bb[:])
 
     // flames := make_model_from_animations(
     //     path="assets/textures/flame/frame_00", 
@@ -191,13 +175,7 @@ main :: proc() {
     // )
     // defer delete(props_bb)
 
-    doors_bb := make_boundary_boxes(
-        texture_layer = game.level1["DOORS"]^,
-        width = 0.1,
-        height = 1.0,
-        depth = 1.0,
-    )
-    defer delete(doors_bb)
+    defer delete(game.doors_bb)
 
     player := Player{
         position = rl.Vector3{0, 0, 4},
@@ -236,7 +214,7 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        update_player(&player, &camera, walls_bb)
+        update_player(&player, &camera, game.walls_bb)
 
         // render
         rl.BeginTextureMode(game_view)
@@ -247,11 +225,7 @@ main :: proc() {
         draw_full_wall_from_layer(game.level1["WALL"]^, game.wall)
         draw_doors_from_layer(game.level1["DOORS"]^, game.door)
 
-        // draw_floor_layer_from_map(layers["FLOOR"]^, floor)
-        // draw_full_wall_from_layer(layers["WALL"]^, wall)
-        // draw_doors_from_layer(game.level1["DOORS"]^, door)
-
-        for bb in walls_bb{
+        for bb in game.walls_bb{
             center := (bb.max + bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
         }
@@ -261,7 +235,7 @@ main :: proc() {
         //     rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
         // }
 
-        for do_bb in doors_bb{
+        for do_bb in game.doors_bb{
             center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
         }
