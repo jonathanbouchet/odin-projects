@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f32, depth: f32) -> [dynamic]rl.BoundingBox {
@@ -10,6 +11,7 @@ make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f3
         - coin: 1,   1, 1
         - door: 0.1, 1, 1
     */
+    fmt.printfln("in make_boundary_boxes: %v", texture_layer)
     bb: [dynamic]rl.BoundingBox
     i, j: i32
     x, y, z: f32
@@ -62,6 +64,7 @@ draw_full_wall_from_layer :: proc(texture_layer: Texture_Layer, model: rl.Model)
     - indexes: i, j, k are extract by assuming a 10x10 map
     - to make a wall of height = 2, use the loop over TILE_Y
     */
+    // fmt.printfln("in draw_full_wall_from_layer: %v", texture_layer)
     i, j: i32
     x, y, z: f32
     data := texture_layer.data

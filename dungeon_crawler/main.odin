@@ -87,140 +87,112 @@ main :: proc() {
     rl.SetTargetFPS(FPS)
 
     game := game_init()
+    game_load(&game)
 
-    // read input data for 1 map
-    map_data := read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
-    defer delete(map_data.layers)
-    fmt.println(typeid_of(type_of(map_data))) 
-    fmt.printfln("# of layers: %v", len(map_data.layers))
+    fmt.printfln("layers from game: %v", game.level1)
 
-    layers := extract_all_layers(map_data)
-    fmt.printfln("layers: %", layers)
+    defer delete(game.map_data1.layers)
+    defer delete(game.level1)
 
-    // // read input data for 1 map
-    // map_data2 := read_input_data("assets/maps/test4_10x10.tmj", Map_Data)
-    // defer delete(map_data2.layers)
-    // // fmt.println(typeid_of(type_of(map_data))) 
-    // fmt.printfln("# of layers: %v", len(map_data2.layers))
-
-    // layers2 := extract_all_layers(map_data2)
-    // fmt.printfln("layers: %", layers)
-
-    // game.level1.layers = layers
-    // game.level2.layers = layers2
-
-    defer delete(layers)
-    // defer delete(layers2)
-
-    wall_texture := rl.LoadTexture("assets/textures/wall_minimalist_32x32_v3.png") // 32x32 pixels minimalist
-    defer rl.UnloadTexture(wall_texture)
-
-    floor_texture := rl.LoadTexture("assets/textures/floor_minimalist_32x32.png") // 32x32 pixels
-    defer rl.UnloadTexture(floor_texture)
-
-    wall := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 1.0)) // full cube
-    wall.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = wall_texture
-
-    floor := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
-    floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = floor_texture
-
-    door_texture := rl.LoadTexture("assets/textures/door_minimalist_32x32.png") // 32x32 pixels
-    defer rl.UnloadTexture(door_texture)
-
-    door := rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // z-coordinate flat
-    door.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = door_texture
+    fmt.printfln("game: %v", game)
 
     // stores walls meshes as BB for collision detection 
     walls_bb := make_boundary_boxes(
-        texture_layer = layers["WALL"]^, 
+        texture_layer = game.level1["WALL"]^, 
         width = 1.0, 
         height = 1.0, 
         depth = 1.0,
     )
+    // walls_bb := make_boundary_boxes(
+    //     texture_layer = layers["WALL"]^, 
+    //     width = 1.0, 
+    //     height = 1.0, 
+    //     depth = 1.0,
+    // )
     defer delete(walls_bb)
-    // fmt.printfln("wall bounding boxes: %v", walls_bb[:])
+    fmt.printfln("wall bounding boxes: %v", walls_bb[:])
 
-    flames := make_model_from_animations(
-        path="assets/textures/flame/frame_00", 
-        start_anim=0, 
-        max_anim=4,
-        mesh_cube = [3]f32{1.0, 1.0, 0.0001},
-    )
-    defer delete(flames)
+    // flames := make_model_from_animations(
+    //     path="assets/textures/flame/frame_00", 
+    //     start_anim=0, 
+    //     max_anim=4,
+    //     mesh_cube = [3]f32{1.0, 1.0, 0.0001},
+    // )
+    // defer delete(flames)
 
-    num_flames := len(layers["PROPS"].data)
-    flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
-    defer delete(flames_animation)
-
-    i, j: i32
-    x, y, z: f32
-    data := layers["PROPS"].data
-    min_x: f32 = -TILE_X/2 + 0.5
-    for id in 0..<len(data){
-        if data[id]>0{
-            j = i32(id/10)
-            i = i32(id) - j*10
-            x = min_x + f32(i*1.0)
-            y = 0.5
-            z = min_x + f32(j*1.0)
-            flame := Animation_To_Model{
-                frames = flames,
-                position = {x, y, z},
-                animation_frame_length = 0.1,
-                animation_current_frame = 0,
-                run_frame_timer = 0.0,
-            }
-            append(&flames_animation, flame)
-        }
-    } 
-
-    coins := make_model_from_animations(
-        path="assets/textures/silver_coin/", 
-        start_anim=1, 
-        max_anim=6,
-        // path="assets/textures/coin/frame_", 
-        // start_anim=1, 
-        // max_anim=7,
-        mesh_cube = [3]f32{0.5, 0.5, 0.0001},
-    )
-    defer delete(coins)
-
-    num_coins := len(layers["COINS"].data)
-    coins_animation := make([dynamic]Animation_To_Model, 0, num_coins)
-    defer delete(coins_animation)
+    // num_flames := len(game.level1["PROPS"].data)
+    // flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
+    // defer delete(flames_animation)
 
     // i, j: i32
     // x, y, z: f32
-    data = layers["COINS"].data
+    // data := game.level1["PROPS"].data
     // min_x: f32 = -TILE_X/2 + 0.5
-    for id in 0..<len(data){
-        if data[id]>0{
-            j = i32(id/10)
-            i = i32(id) - j*10
-            x = min_x + f32(i*1.0)
-            y = 0.5
-            z = min_x + f32(j*1.0)
-            coin := Animation_To_Model{
-                frames = coins,
-                position = {x, y, z},
-                animation_frame_length = 0.1,
-                animation_current_frame = 0,
-                run_frame_timer = 0.0,
-            }
-            append(&coins_animation, coin)
-        }
-    } 
+    // for id in 0..<len(data){
+    //     if data[id]>0{
+    //         j = i32(id/10)
+    //         i = i32(id) - j*10
+    //         x = min_x + f32(i*1.0)
+    //         y = 0.5
+    //         z = min_x + f32(j*1.0)
+    //         flame := Animation_To_Model{
+    //             frames = flames,
+    //             position = {x, y, z},
+    //             animation_frame_length = 0.1,
+    //             animation_current_frame = 0,
+    //             run_frame_timer = 0.0,
+    //         }
+    //         append(&flames_animation, flame)
+    //     }
+    // } 
 
-    props_bb := make_boundary_boxes(
-        texture_layer = layers["COINS"]^,
-        width = 1.0,
-        height = 1.0,
-        depth = 1.0,
-    )
-    defer delete(props_bb)
+    // coins := make_model_from_animations(
+    //     path="assets/textures/silver_coin/", 
+    //     start_anim=1, 
+    //     max_anim=6,
+    //     // path="assets/textures/coin/frame_", 
+    //     // start_anim=1, 
+    //     // max_anim=7,
+    //     mesh_cube = [3]f32{0.5, 0.5, 0.0001},
+    // )
+    // defer delete(coins)
+
+    // num_coins := len(game.level1["COINS"].data)
+    // coins_animation := make([dynamic]Animation_To_Model, 0, num_coins)
+    // defer delete(coins_animation)
+
+    // // i, j: i32
+    // // x, y, z: f32
+    // data = game.level1["COINS"].data
+    // // min_x: f32 = -TILE_X/2 + 0.5
+    // for id in 0..<len(data){
+    //     if data[id]>0{
+    //         j = i32(id/10)
+    //         i = i32(id) - j*10
+    //         x = min_x + f32(i*1.0)
+    //         y = 0.5
+    //         z = min_x + f32(j*1.0)
+    //         coin := Animation_To_Model{
+    //             frames = coins,
+    //             position = {x, y, z},
+    //             animation_frame_length = 0.1,
+    //             animation_current_frame = 0,
+    //             run_frame_timer = 0.0,
+    //         }
+    //         append(&coins_animation, coin)
+    //     }
+    // } 
+
+    // props_bb := make_boundary_boxes(
+    //     texture_layer = game.level1["COINS"]^,
+    //     width = 1.0,
+    //     height = 1.0,
+    //     depth = 1.0,
+    // )
+    // defer delete(props_bb)
 
     doors_bb := make_boundary_boxes(
-        texture_layer = layers["DOORS"]^,
+        texture_layer = game.level1["DOORS"]^,
         width = 0.1,
         height = 1.0,
         depth = 1.0,
@@ -254,15 +226,13 @@ main :: proc() {
     defer rl.UnloadRenderTexture(game_view)
 
     ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
-    hearts:= [3]rl.Texture{
-        rl.LoadTexture("assets/textures/Heart_Full_64.png"),
-        rl.LoadTexture("assets/textures/Heart_Half_64.png"),
-        rl.LoadTexture("assets/textures/Heart_Empty_64.png"),
-    }
+    // hearts:= [3]rl.Texture{
+    //     rl.LoadTexture("assets/textures/Heart_Full_64.png"),
+    //     rl.LoadTexture("assets/textures/Heart_Half_64.png"),
+    //     rl.LoadTexture("assets/textures/Heart_Empty_64.png"),
+    // }
 
     rl.DisableCursor() 
-
-    // fmt.printfln("game starts")
 
     for !rl.WindowShouldClose() {
         // update
@@ -273,32 +243,36 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(camera)
 
-        draw_floor_layer_from_map(layers["FLOOR"]^, floor)
-        draw_full_wall_from_layer(layers["WALL"]^, wall)
-        draw_doors_from_layer(layers["DOORS"]^, door)
+        draw_floor_layer_from_map(game.level1["FLOOR"]^, game.floor)
+        draw_full_wall_from_layer(game.level1["WALL"]^, game.wall)
+        draw_doors_from_layer(game.level1["DOORS"]^, game.door)
+
+        // draw_floor_layer_from_map(layers["FLOOR"]^, floor)
+        // draw_full_wall_from_layer(layers["WALL"]^, wall)
+        // draw_doors_from_layer(game.level1["DOORS"]^, door)
 
         for bb in walls_bb{
             center := (bb.max + bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
         }
 
-        for pr in props_bb{
-            center := (pr.max + pr.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
-        }
+        // for pr in props_bb{
+        //     center := (pr.max + pr.min) / 2
+        //     rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
+        // }
 
         for do_bb in doors_bb{
             center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
         }
 
-        for &fl in flames_animation{
-            draw_animation_model(&fl)
-        }
+        // for &fl in flames_animation{
+        //     draw_animation_model(&fl)
+        // }
 
-        for &co in coins_animation{
-            draw_animation_model(&co)
-        }
+        // for &co in coins_animation{
+        //     draw_animation_model(&co)
+        // }
 
         rl.EndMode3D()
         rl.EndTextureMode()
@@ -315,7 +289,7 @@ main :: proc() {
             rl.WHITE,
         )
 
-        draw_ui_panels(ui_rect, hearts)
+        // draw_ui_panels(ui_rect, hearts)
 
         draw_debug(player)
         rl.EndDrawing()
