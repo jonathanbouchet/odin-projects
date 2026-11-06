@@ -177,7 +177,7 @@ main :: proc() {
 
     defer delete(game.doors_bb)
 
-    player := Player{
+    game.player = Player{
         position = rl.Vector3{0, 0, 4},
         velocity = {},
         speed = 5,
@@ -188,9 +188,9 @@ main :: proc() {
         is_colliding = false,
     }
 
-    game.player = player
+    // game.player = player
 
-    camera := rl.Camera3D{
+    game.camera = rl.Camera3D{
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
         target     = { 0.0, 1.0, 10.0},
         fovy       = 60.0,               // Camera field-of-view Y
@@ -214,12 +214,12 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        update_player(&player, &camera, game.walls_bb)
+        update_player(&game.player, &game.camera, game.walls_bb)
 
         // render
         rl.BeginTextureMode(game_view)
         rl.ClearBackground(BACKGROUND_BLACK)
-        rl.BeginMode3D(camera)
+        rl.BeginMode3D(game.camera)
 
         draw_floor_layer_from_map(game.level1["FLOOR"]^, game.floor)
         draw_full_wall_from_layer(game.level1["WALL"]^, game.wall)
@@ -265,7 +265,7 @@ main :: proc() {
 
         // draw_ui_panels(ui_rect, hearts)
 
-        draw_debug(player)
+        draw_debug(game.player)
         rl.EndDrawing()
     }
 }

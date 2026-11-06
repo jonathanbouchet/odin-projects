@@ -4,6 +4,7 @@ import "core:fmt"
 import rl "vendor:raylib"
 
 Game :: struct {
+    camera: rl.Camera3D,
     player: Player,
     map_data1: Map_Data,
     level1: map[string]^Texture_Layer,
