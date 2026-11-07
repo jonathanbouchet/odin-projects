@@ -20,20 +20,23 @@ TILE_X :: 10
 TILE_Z :: 10
 TILE_Y :: 2
 
-draw_debug :: proc(player: Player) {
+draw_debug :: proc(game: Game) {
     /*
     various "debug" utils:
     - draw the FPS number
     - draw lines, h and v, representing the mid-screen
     */
-    player_colliding_str := strings.clone_to_cstring(fmt.tprintf("is colliding: %v", player.is_colliding))
+    player_colliding_str := strings.clone_to_cstring(fmt.tprintf("is colliding: %v", game.player.is_colliding))
     defer delete(player_colliding_str)
-    player_pos_str := strings.clone_to_cstring(fmt.tprintf("X:%.2f, Z:%.2f", player.position.x, player.position.z))
+    player_pos_str := strings.clone_to_cstring(fmt.tprintf("X:%.2f, Z:%.2f", game.player.position.x, game.player.position.z))
     defer delete(player_pos_str)
+    game_level_str := strings.clone_to_cstring(fmt.tprintf("LEVEL:%d", game.current_level_id))
+    defer delete(game_level_str)
 
     rl.DrawFPS(0, 0)
     rl.DrawText(player_pos_str, 0, 20, 20, GREEN)
-    rl.DrawText(player_colliding_str, 0, 40, 20, rl.RED if player.is_colliding else GREEN)
+    rl.DrawText(player_colliding_str, 0, 40, 20, rl.RED if game.player.is_colliding else GREEN)
+    rl.DrawText(game_level_str, 0, 60, 20, GREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, GREEN)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, GREEN)
 }
@@ -90,46 +93,52 @@ main :: proc() {
     game := game_init()
     game_load(&game)
 
-    fmt.printfln("layers from game: %v", game.level1)
-
     defer delete(game.map_data1.layers)
     defer delete(game.level1)
+
+    defer delete(game.map_data2.layers)
+    defer delete(game.level2)
+
+
     defer delete(game.walls_bb)
+    defer delete(game.doors_bb)
+
     fmt.printfln("wall bounding boxes: %v", game.walls_bb[:])
 
-    // flames := make_model_from_animations(
-    //     path="assets/textures/flame/frame_00", 
-    //     start_anim=0, 
-    //     max_anim=4,
-    //     mesh_cube = [3]f32{1.0, 1.0, 0.0001},
-    // )
-    // defer delete(flames)
+    flames := make_model_from_animations(
+        // path="assets/textures/flame/frame_00", 
+        path="assets/textures/flame2/Sprite-000", 
+        start_anim=1, 
+        max_anim=7,
+        mesh_cube = [3]f32{1.0, 1.0, 0.0001},
+    )
+    defer delete(flames)
 
-    // num_flames := len(game.level1["PROPS"].data)
-    // flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
-    // defer delete(flames_animation)
+    num_flames := len(game.current_level["PROPS"].data)
+    flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
+    defer delete(flames_animation)
 
-    // i, j: i32
-    // x, y, z: f32
-    // data := game.level1["PROPS"].data
-    // min_x: f32 = -TILE_X/2 + 0.5
-    // for id in 0..<len(data){
-    //     if data[id]>0{
-    //         j = i32(id/10)
-    //         i = i32(id) - j*10
-    //         x = min_x + f32(i*1.0)
-    //         y = 0.5
-    //         z = min_x + f32(j*1.0)
-    //         flame := Animation_To_Model{
-    //             frames = flames,
-    //             position = {x, y, z},
-    //             animation_frame_length = 0.1,
-    //             animation_current_frame = 0,
-    //             run_frame_timer = 0.0,
-    //         }
-    //         append(&flames_animation, flame)
-    //     }
-    // } 
+    i, j: i32
+    x, y, z: f32
+    data := game.current_level["PROPS"].data
+    min_x: f32 = -TILE_X/2 + 0.5
+    for id in 0..<len(data){
+        if data[id]>0{
+            j = i32(id/10)
+            i = i32(id) - j*10
+            x = min_x + f32(i*1.0)
+            y = 0.5
+            z = min_x + f32(j*1.0)
+            flame := Animation_To_Model{
+                frames = flames,
+                position = {x, y, z},
+                animation_frame_length = 0.1,
+                animation_current_frame = 0,
+                run_frame_timer = 0.0,
+            }
+            append(&flames_animation, flame)
+        }
+    } 
 
     // coins := make_model_from_animations(
     //     path="assets/textures/silver_coin/", 
@@ -175,8 +184,6 @@ main :: proc() {
     //     depth = 1.0,
     // )
     // defer delete(props_bb)
-
-    defer delete(game.doors_bb)
 
     game.player = Player{
         position = rl.Vector3{0, 0, 4},
@@ -227,9 +234,9 @@ main :: proc() {
         //     rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
         // }
 
-        // for &fl in flames_animation{
-        //     draw_animation_model(&fl)
-        // }
+        for &fl in flames_animation{
+            draw_animation_model(&fl, 1.0)
+        }
 
         // for &co in coins_animation{
         //     draw_animation_model(&co)
@@ -251,6 +258,9 @@ main :: proc() {
         )
 
         // draw_ui_panels(ui_rect, hearts)
+        if game.debug{
+            draw_debug(game)
+        }
 
         rl.EndDrawing()
     }

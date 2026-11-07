@@ -71,19 +71,29 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
     doors_layer: ^Texture_Layer = nil
 
     floor_layer = extract_layer_data(map_data, 1)
+    if floor_layer != nil{
     defer delete(floor_layer.name)
+    }
 
     wall_layer = extract_layer_data(map_data, 2)
+    if wall_layer != nil{
     defer delete(wall_layer.name)
+    }
 
     props_layer = extract_layer_data(map_data, 3)
-    defer delete(props_layer.name)
+    if props_layer != nil{
+        defer delete(props_layer.name)
+    }
 
     coins_layer = extract_layer_data(map_data, 5)
-    defer delete(coins_layer.name)
+    if coins_layer != nil{
+        defer delete(coins_layer.name)
+    }
 
     doors_layer = extract_layer_data(map_data, 4)
-    defer delete(doors_layer.name)
+    if doors_layer != nil{
+        defer delete(doors_layer.name)
+    }
 
     m := map[string]^Texture_Layer{
         "FLOOR" = floor_layer,
@@ -104,51 +114,3 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
     return model
 }
-
-// extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> (layer: ^Texture_Layer, found: bool) {
-//     /*
-//     - extract a particular Texture_Layer given a layer_id
-//     */
-//     for &layer in data.layers {
-//         if layer.id == layer_id {
-//             return &layer, true
-//         }
-//     }
-//     return nil, false
-// }
-
-// extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
-//     m := make(map[string]^Texture_Layer)
-
-//     if floor_layer, ok := extract_layer_data(map_data, 1); ok{
-//         m["FLOOR"] = floor_layer
-//         defer delete(floor_layer.name)
-//     } else {
-//         m["FLOOR"] = nil
-//     }
-//     if wall_layer, ok := extract_layer_data(map_data, 2); ok{
-//         m["WALL"] = wall_layer
-//         defer delete(wall_layer.name)
-//     }else {
-//         m["WALL"] = nil
-//     }
-//     if doors_layer, ok := extract_layer_data(map_data, 4); ok{
-//         m["DOORS"] = doors_layer
-//         defer delete(doors_layer.name)
-//     }else {
-//         m["DOORS"] = nil
-//     }
-//     if props_layer, ok := extract_layer_data(map_data, 3); ok{
-//         m["PROPS"] = props_layer
-//         defer delete(props_layer.name)
-//     }else {
-//         m["PROPS"] = nil
-//     }
-//     if coins_layer, ok := extract_layer_data(map_data, 5); ok{
-//         m["COINS"] = coins_layer
-//         defer delete(coins_layer.name)
-//     }else {
-//         m["COINS"] = nil
-//     }
-//     return m
-// }

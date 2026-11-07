@@ -29,13 +29,12 @@ make_model_from_animations :: proc(path: string, start_anim: i32, max_anim: i32,
         fmt.printfln("width: %v, height:%v", t.width, t.height)
         m := rl.LoadModelFromMesh(rl.GenMeshCube(mesh_cube[0], mesh_cube[1], mesh_cube[2]))
         m.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = t
-        // tmp[i] = m
         append(&tmp, m)
     }
     return tmp
 }
 
-draw_animation_model :: proc(am: ^Animation_To_Model) {
+draw_animation_model :: proc(am: ^Animation_To_Model, scale: f32) {
     /*
     - create an animation of models (props) by looping over all model in the struct
     */
@@ -58,7 +57,7 @@ draw_animation_model :: proc(am: ^Animation_To_Model) {
         am.position, 
         rl.Vector3{0, 0, 1}, 
         180.0, 
-        1.0, 
+        scale, 
         rl.RAYWHITE,
     )
 }
