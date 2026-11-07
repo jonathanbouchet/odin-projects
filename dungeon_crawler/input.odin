@@ -3,7 +3,9 @@ package main
 
 import "core:os"
 import "core:fmt"
+import "core:strings"
 import "core:encoding/json"
+import rl "vendor:raylib"
 
 Texture_Layer :: struct {
     id: i32,
@@ -92,6 +94,15 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
     }
 
     return m
+}
+
+load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
+    path_cstring := strings.clone_to_cstring(path)
+    defer delete(path_cstring)
+    texture := rl.LoadTexture(path_cstring) // 32x32 pixels minimalist
+    model := rl.LoadModelFromMesh(rl.GenMeshCube(dim.x, dim.y, dim.z)) // full cube
+    model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
+    return model
 }
 
 // extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> (layer: ^Texture_Layer, found: bool) {

@@ -8,14 +8,12 @@ Game :: struct {
     player: Player,
     map_data1: Map_Data,
     level1: map[string]^Texture_Layer,
-    wall_texture: rl.Texture,
     wall: rl.Model,
-    floor_texture: rl.Texture,
     floor: rl.Model,
-    door_texture: rl.Texture,
     door: rl.Model,
     walls_bb: [dynamic]rl.BoundingBox,
     doors_bb: [dynamic]rl.BoundingBox,
+    debug: bool,
 }
 
 game_init :: proc() -> Game{
@@ -36,17 +34,9 @@ game_load :: proc(game: ^Game){
     fmt.printfln("# of layers in map 1: %v", len(game.map_data1.layers))
     game.level1 = extract_all_layers(game.map_data1)
 
-    game.wall_texture = rl.LoadTexture("assets/textures/wall_minimalist_32x32_v3.png") // 32x32 pixels minimalist
-    game.wall = rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 1.0)) // full cube
-    game.wall.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = game.wall_texture
-
-    game.floor_texture = rl.LoadTexture("assets/textures/floor_minimalist_32x32.png") // 32x32 pixels
-    game.floor = rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 0.01, 1.0)) // y-coordinate flat
-    game.floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = game.floor_texture
-
-    game.door_texture = rl.LoadTexture("assets/textures/door_minimalist_32x32.png") // 32x32 pixels
-    game.door = rl.LoadModelFromMesh(rl.GenMeshCube(1.0, 1.0, 0.0001)) // z-coordinate flat
-    game.door.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = game.door_texture
+    game.wall = load_and_make_model("assets/textures/wall_minimalist_32x32_v3.png", rl.Vector3{1.0, 1.0, 1.0})
+    game.floor = load_and_make_model("assets/textures/floor_minimalist_32x32.png", rl.Vector3{1.0, 0.01, 1.0})
+    game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
 
     game.walls_bb = make_boundary_boxes(
         texture_layer = game.level1["WALL"]^, 
@@ -61,7 +51,25 @@ game_load :: proc(game: ^Game){
         height = 1.0,
         depth = 1.0,
     )
+
+    game.debug = true
 }
 
 draw_game :: proc(game: Game){
+    draw_floor_layer_from_map(game.level1["FLOOR"]^, game.floor)
+    draw_full_wall_from_layer(game.level1["WALL"]^, game.wall)
+    draw_doors_from_layer(game.level1["DOORS"]^, game.door)
+    if game.debug{
+        for bb in game.walls_bb{
+            center := (bb.max + bb.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
+        }
+
+        for do_bb in game.doors_bb{
+            center := (do_bb.max + do_bb.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
+        }
+
+        draw_debug(game.player)
+    }
 }

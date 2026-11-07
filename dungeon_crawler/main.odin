@@ -81,6 +81,7 @@ main :: proc() {
 
         mem.tracking_allocator_destroy(&tracking)
     }
+    settings := set_game()
     rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon")
     defer rl.CloseWindow()
@@ -188,8 +189,6 @@ main :: proc() {
         is_colliding = false,
     }
 
-    // game.player = player
-
     game.camera = rl.Camera3D{
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
         target     = { 0.0, 1.0, 10.0},
@@ -197,8 +196,8 @@ main :: proc() {
         projection = .PERSPECTIVE,       // Camera projection type
     }
 
-    view_width := WIDTH
-    view_height := HEIGHT
+    view_width := settings.WIDTH
+    view_height := settings.HEIGHT
 
     game_view := rl.LoadRenderTexture(i32(view_width), i32(view_height))
     defer rl.UnloadRenderTexture(game_view)
@@ -221,24 +220,12 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(game.camera)
 
-        draw_floor_layer_from_map(game.level1["FLOOR"]^, game.floor)
-        draw_full_wall_from_layer(game.level1["WALL"]^, game.wall)
-        draw_doors_from_layer(game.level1["DOORS"]^, game.door)
-
-        for bb in game.walls_bb{
-            center := (bb.max + bb.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN)
-        }
+        draw_game(game)
 
         // for pr in props_bb{
         //     center := (pr.max + pr.min) / 2
         //     rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
         // }
-
-        for do_bb in game.doors_bb{
-            center := (do_bb.max + do_bb.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN)
-        }
 
         // for &fl in flames_animation{
         //     draw_animation_model(&fl)
@@ -265,7 +252,6 @@ main :: proc() {
 
         // draw_ui_panels(ui_rect, hearts)
 
-        draw_debug(game.player)
         rl.EndDrawing()
     }
 }
