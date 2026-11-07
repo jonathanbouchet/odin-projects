@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import rl "vendor:raylib"
 
 Game :: struct {
@@ -55,13 +56,16 @@ game_load :: proc(game: ^Game){
         width = 1.0, 
         height = 1.0, 
         depth = 1.0,
+        collider_type="wall",
     )
 
+    // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
     game.doors_bb = make_boundary_boxes(
         texture_layer = game.current_level["DOORS"]^,
-        width = 0.1,
+        width = 0.5,
         height = 1.0,
         depth = 1.0,
+        collider_type="door",
     )
 
     game.debug = true
@@ -81,5 +85,145 @@ draw_game :: proc(game: Game){
             center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
         }
+    }
+}
+
+
+update_game :: proc(game: ^Game) {
+    dt := rl.GetFrameTime()
+    move_speed := game.player.speed * dt
+
+    mouse_delta := rl.GetMouseDelta()
+    game.player.yaw -= mouse_delta.x * game.player.sensitivity
+    game.player.pitch -= mouse_delta.y * game.player.sensitivity
+
+    max_pitch: f32 = math.PI / 2.0 - 0.01
+    game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
+
+    forward := rl.Vector3{
+        math.sin(game.player.yaw),
+        0,
+        math.cos(game.player.yaw),
+    }
+    right := rl.Vector3{
+        math.cos(game.player.yaw),
+        0,
+        -math.sin(game.player.yaw),
+    }
+
+    // Combine input directions into one world-space movement vector.
+    move := rl.Vector3{}
+    if rl.IsKeyDown(.UP)    { move += forward }
+    if rl.IsKeyDown(.DOWN)  { move -= forward }
+    if rl.IsKeyDown(.LEFT)  { move += right }
+    if rl.IsKeyDown(.RIGHT) { move -= right }
+
+    // Prevent diagonal movement from being faster.
+    if rl.Vector3Length(move) > 0 {
+        move = rl.Vector3Normalize(move) * move_speed
+    }
+
+    game.player.is_colliding = false
+
+    // Move and resolve X first.
+    game.player.position.x += move.x
+    player_bb := player_bounding_box_adjusted(game.player)
+    for wall in game.walls_bb {
+        if rl.CheckCollisionBoxes(wall, player_bb) {
+            game.player.position.x -= move.x
+            game.player.is_colliding = true
+            break
+        }
+    }
+
+    // doors are only along X axis so we check only X for a door collision
+    for door in game.doors_bb {
+        if rl.CheckCollisionBoxes(door, player_bb) {
+            // game.player.position.x -= move.x
+            game.player.is_colliding = true
+            if rl.IsKeyPressed(.SPACE){
+                game_switch_level(game)
+            }
+            break
+        }
+    }
+
+    // Then move and resolve Z, using the possibly updated X position.
+    game.player.position.z += move.z
+    player_bb = player_bounding_box_adjusted(game.player)
+    for wall in game.walls_bb {
+        if rl.CheckCollisionBoxes(wall, player_bb) {
+            game.player.position.z -= move.z
+            game.player.is_colliding = true
+            break
+        }
+    }
+
+    game.camera.position = rl.Vector3{
+        game.player.position.x,
+        game.player.position.y + game.player.eyes,
+        game.player.position.z,
+    }
+
+    direction := rl.Vector3{
+        math.cos(game.player.pitch) * math.sin(game.player.yaw),
+        math.sin(game.player.pitch),
+        math.cos(game.player.pitch) * math.cos(game.player.yaw),
+    }
+    game.camera.target = game.camera.position + direction
+}
+
+
+game_switch_level :: proc(game: ^Game){
+    if game.current_level_id == 1{
+        game.current_level_id = 2
+        game.current_level = &game.level2
+        // TO DO: need the door location for spawning the player
+
+        // update the bb of the current level
+        // clear existing bb before updating them
+        // wrong: need to delete entirely because clear does not free the underlying heap-allocated memory
+        // -> the capacity (cap()) remains intact
+        delete(game.walls_bb)
+        delete(game.doors_bb)
+        // TO DO: refactor
+        game.walls_bb = make_boundary_boxes(
+        texture_layer = game.current_level["WALL"]^, 
+        width = 1.0, 
+        height = 1.0, 
+        depth = 1.0,
+        collider_type="wall",
+    )
+        // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
+        game.doors_bb = make_boundary_boxes(
+            texture_layer = game.current_level["DOORS"]^,
+            width = 0.5,
+            height = 1.0,
+            depth = 1.0,
+            collider_type="door",
+        )
+    } else {
+        game.current_level_id = 1
+        game.current_level = &game.level1
+
+        // clear existing bb before updating them
+        delete(game.walls_bb)
+        delete(game.doors_bb)
+
+        game.walls_bb = make_boundary_boxes(
+        texture_layer = game.current_level["WALL"]^, 
+        width = 1.0, 
+        height = 1.0, 
+        depth = 1.0,
+        collider_type="wall",
+    )
+        // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
+        game.doors_bb = make_boundary_boxes(
+            texture_layer = game.current_level["DOORS"]^,
+            width = 0.5,
+            height = 1.0,
+            depth = 1.0,
+            collider_type="door",
+        )
     }
 }

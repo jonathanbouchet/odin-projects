@@ -99,7 +99,6 @@ main :: proc() {
     defer delete(game.map_data2.layers)
     defer delete(game.level2)
 
-
     defer delete(game.walls_bb)
     defer delete(game.doors_bb)
 
@@ -220,7 +219,8 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        update_player(&game.player, &game.camera, game.walls_bb)
+        // update_player(&game.player, &game.camera, game.walls_bb)
+        update_game(&game)
 
         // render
         rl.BeginTextureMode(game_view)

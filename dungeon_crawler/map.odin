@@ -2,7 +2,7 @@ package main
 
 import rl "vendor:raylib"
 
-make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f32, depth: f32) -> [dynamic]rl.BoundingBox {
+make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f32, depth: f32, collider_type: string) -> [dynamic]rl.BoundingBox {
     /*
     - make an dynamic array of BoundingBoxes of all tiles in that layer
     - take width(x), height(y), depth(z) as parameters to fit with different tiles:
@@ -19,9 +19,15 @@ make_boundary_boxes :: proc(texture_layer: Texture_Layer, width: f32, height: f3
         if data[id] > 0 {
             j = i32(id/10)
             i = i32(id) - j*10
-            x = min_x + f32(i*1.0) - 0.5
-            y = 0.0
-            z = min_x + f32(j*1.0) - 0.5
+            if collider_type == "door"{
+                x = min_x + f32(i*1.0) - 0.75
+                y = 0.0
+                z = min_x + f32(j*1.0) - 0.5
+            } else{
+                x = min_x + f32(i*1.0) - 0.5
+                y = 0.0
+                z = min_x + f32(j*1.0) - 0.5
+            }
 
             xx := x + width
             yy:f32 = height
