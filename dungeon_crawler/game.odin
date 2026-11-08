@@ -51,27 +51,12 @@ game_load :: proc(game: ^Game){
     game.floor = load_and_make_model("assets/textures/floor_minimalist_32x32.png", rl.Vector3{1.0, 0.01, 1.0})
     game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
 
-    game.walls_bb = make_boundary_boxes(
-        texture_layer = game.current_level["WALL"]^, 
-        width = 1.0, 
-        height = 1.0, 
-        depth = 1.0,
-        collider_type="wall",
-    )
-
-    // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
-    game.doors_bb = make_boundary_boxes(
-        texture_layer = game.current_level["DOORS"]^,
-        width = 0.5,
-        height = 1.0,
-        depth = 1.0,
-        collider_type="door",
-    )
+    game_make_bb(game)
 
     game.debug = true
 }
 
-draw_game :: proc(game: Game){
+game_draw :: proc(game: Game){
     draw_floor_layer_from_map(game.current_level["FLOOR"]^, game.floor)
     draw_full_wall_from_layer(game.current_level["WALL"]^, game.wall)
     draw_doors_from_layer(game.current_level["DOORS"]^, game.door)
@@ -89,7 +74,7 @@ draw_game :: proc(game: Game){
 }
 
 
-update_game :: proc(game: ^Game) {
+game_update :: proc(game: ^Game) {
     dt := rl.GetFrameTime()
     move_speed := game.player.speed * dt
 
@@ -186,22 +171,7 @@ game_switch_level :: proc(game: ^Game){
         // -> the capacity (cap()) remains intact
         delete(game.walls_bb)
         delete(game.doors_bb)
-        // TO DO: refactor
-        game.walls_bb = make_boundary_boxes(
-        texture_layer = game.current_level["WALL"]^, 
-        width = 1.0, 
-        height = 1.0, 
-        depth = 1.0,
-        collider_type="wall",
-    )
-        // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
-        game.doors_bb = make_boundary_boxes(
-            texture_layer = game.current_level["DOORS"]^,
-            width = 0.5,
-            height = 1.0,
-            depth = 1.0,
-            collider_type="door",
-        )
+        game_make_bb(game)
     } else {
         game.current_level_id = 1
         game.current_level = &game.level1
@@ -209,21 +179,24 @@ game_switch_level :: proc(game: ^Game){
         // clear existing bb before updating them
         delete(game.walls_bb)
         delete(game.doors_bb)
+        game_make_bb(game)
+    }
+}
 
-        game.walls_bb = make_boundary_boxes(
+game_make_bb :: proc(game: ^Game){
+    game.walls_bb = make_boundary_boxes(
         texture_layer = game.current_level["WALL"]^, 
         width = 1.0, 
         height = 1.0, 
         depth = 1.0,
         collider_type="wall",
     )
-        // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
-        game.doors_bb = make_boundary_boxes(
-            texture_layer = game.current_level["DOORS"]^,
-            width = 0.5,
-            height = 1.0,
-            depth = 1.0,
-            collider_type="door",
-        )
-    }
+    // increasing door's bb from 0.1 to 0.5 for allowing K pressed to switch level
+    game.doors_bb = make_boundary_boxes(
+        texture_layer = game.current_level["DOORS"]^,
+        width = 0.5,
+        height = 1.0,
+        depth = 1.0,
+        collider_type="door",
+    )
 }

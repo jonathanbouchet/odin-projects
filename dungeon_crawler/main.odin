@@ -208,7 +208,7 @@ main :: proc() {
     game_view := rl.LoadRenderTexture(i32(view_width), i32(view_height))
     defer rl.UnloadRenderTexture(game_view)
 
-    ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
+    // ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
     // hearts:= [3]rl.Texture{
     //     rl.LoadTexture("assets/textures/Heart_Full_64.png"),
     //     rl.LoadTexture("assets/textures/Heart_Half_64.png"),
@@ -219,15 +219,14 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         // update
-        // update_player(&game.player, &game.camera, game.walls_bb)
-        update_game(&game)
+        game_update(&game)
 
         // render
         rl.BeginTextureMode(game_view)
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(game.camera)
 
-        draw_game(game)
+        game_draw(game)
 
         // for pr in props_bb{
         //     center := (pr.max + pr.min) / 2
