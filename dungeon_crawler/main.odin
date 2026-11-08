@@ -93,51 +93,17 @@ main :: proc() {
     game := game_init()
     game_load(&game)
 
-    defer delete(game.map_data1.layers)
-    defer delete(game.level1)
+    // defer delete(game.map_data1.layers)
+    // defer delete(game.level1)
 
-    defer delete(game.map_data2.layers)
-    defer delete(game.level2)
+    // defer delete(game.map_data2.layers)
+    // defer delete(game.level2)
 
-    defer delete(game.walls_bb)
-    defer delete(game.doors_bb)
+    // defer delete(game.walls_bb)
+    // defer delete(game.doors_bb)
 
-    fmt.printfln("wall bounding boxes: %v", game.walls_bb[:])
-
-    flames := make_model_from_animations(
-        // path="assets/textures/flame/frame_00", 
-        path="assets/textures/flame2/Sprite-000", 
-        start_anim=1, 
-        max_anim=7,
-        mesh_cube = [3]f32{1.0, 1.0, 0.0001},
-    )
-    defer delete(flames)
-
-    num_flames := len(game.current_level["PROPS"].data)
-    flames_animation := make([dynamic]Animation_To_Model, 0, num_flames)
-    defer delete(flames_animation)
-
-    i, j: i32
-    x, y, z: f32
-    data := game.current_level["PROPS"].data
-    min_x: f32 = -TILE_X/2 + 0.5
-    for id in 0..<len(data){
-        if data[id]>0{
-            j = i32(id/10)
-            i = i32(id) - j*10
-            x = min_x + f32(i*1.0)
-            y = 0.5
-            z = min_x + f32(j*1.0)
-            flame := Animation_To_Model{
-                frames = flames,
-                position = {x, y, z},
-                animation_frame_length = 0.1,
-                animation_current_frame = 0,
-                run_frame_timer = 0.0,
-            }
-            append(&flames_animation, flame)
-        }
-    } 
+    // defer delete(game.flame_animations)
+    // defer delete(game.flames)
 
     // coins := make_model_from_animations(
     //     path="assets/textures/silver_coin/", 
@@ -233,7 +199,7 @@ main :: proc() {
         //     rl.DrawCubeWiresV(center, rl.Vector3{0.5, 1.0, 0.5}, GREEN)
         // }
 
-        for &fl in flames_animation{
+        for &fl in game.flame_animations{
             draw_animation_model(&fl, 1.0)
         }
 
@@ -263,4 +229,5 @@ main :: proc() {
 
         rl.EndDrawing()
     }
+    game_defer_delete(game)
 }

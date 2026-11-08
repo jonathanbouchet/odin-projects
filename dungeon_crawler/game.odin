@@ -19,6 +19,9 @@ Game :: struct {
     debug: bool,
     current_level_id: i32,
     current_level: ^map[string]^Texture_Layer,
+    flames: [dynamic]rl.Model,
+    num_flames: i32,
+    flame_animations: [dynamic]Animation_To_Model,
 }
 
 game_init :: proc() -> Game{
@@ -50,6 +53,8 @@ game_load :: proc(game: ^Game){
     game.wall = load_and_make_model("assets/textures/wall_minimalist_32x32_v3.png", rl.Vector3{1.0, 1.0, 1.0})
     game.floor = load_and_make_model("assets/textures/floor_minimalist_32x32.png", rl.Vector3{1.0, 0.01, 1.0})
     game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
+
+    game_make_animations(game=game, path="assets/textures/flame2/Sprite-000", start_anim=1, max_anim=7, layer="PROPS")
 
     game_make_bb(game)
 
@@ -199,4 +204,52 @@ game_make_bb :: proc(game: ^Game){
         depth = 1.0,
         collider_type="door",
     )
+}
+
+game_make_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, layer: string){
+    game.flames = make_model_from_animations(
+        // path="assets/textures/flame/frame_00", 
+        path=path, 
+        start_anim=start_anim, 
+        max_anim=max_anim,
+        mesh_cube = [3]f32{1.0, 1.0, 0.0001},
+    )
+    game.num_flames = len(game.current_level[layer].data)
+    game.flame_animations = make([dynamic]Animation_To_Model, 0, game.num_flames)
+
+    i, j: i32
+    x, y, z: f32
+    data := game.current_level["PROPS"].data
+    min_x: f32 = -TILE_X/2 + 0.5
+    for id in 0..<len(data){
+        if data[id]>0{
+            j = i32(id/10)
+            i = i32(id) - j*10
+            x = min_x + f32(i*1.0)
+            y = 0.5
+            z = min_x + f32(j*1.0)
+            flame := Animation_To_Model{
+                frames = game.flames,
+                position = {x, y, z},
+                animation_frame_length = 0.1,
+                animation_current_frame = 0,
+                run_frame_timer = 0.0,
+            }
+            append(&game.flame_animations, flame)
+        }
+    } 
+}
+
+game_defer_delete :: proc(game: Game){
+    defer delete(game.map_data1.layers)
+    defer delete(game.level1)
+
+    defer delete(game.map_data2.layers)
+    defer delete(game.level2)
+
+    defer delete(game.walls_bb)
+    defer delete(game.doors_bb)
+
+    defer delete(game.flame_animations)
+    defer delete(game.flames)
 }
