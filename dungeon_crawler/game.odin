@@ -20,8 +20,8 @@ Game :: struct {
     current_level_id: i32,
     current_level: ^map[string]^Texture_Layer,
     flames: [dynamic]rl.Model,
-    num_flames: i32,
-    flame_animations: [dynamic]Animation_To_Model,
+    num_flames_arr: [2]i32, // per level
+    flame_animations_arr: [2][dynamic]Animation_To_Model, // per level
 }
 
 game_init :: proc() -> Game{
@@ -38,12 +38,10 @@ game_load :: proc(game: ^Game){
 
     // read input data for 1 map
     game.map_data1 = read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
-    fmt.println(typeid_of(type_of(game.map_data1))) 
     fmt.printfln("# of layers in map 1: %v", len(game.map_data1.layers))
     game.level1 = extract_all_layers(game.map_data1)
 
     game.map_data2 = read_input_data("assets/maps/test3_10x10.tmj", Map_Data)
-    fmt.println(typeid_of(type_of(game.map_data2))) 
     fmt.printfln("# of layers in map 2: %v", len(game.map_data2.layers))
     game.level2 = extract_all_layers(game.map_data2)
 
@@ -53,9 +51,9 @@ game_load :: proc(game: ^Game){
     game.wall = load_and_make_model("assets/textures/wall_minimalist_32x32_v3.png", rl.Vector3{1.0, 1.0, 1.0})
     game.floor = load_and_make_model("assets/textures/floor_minimalist_32x32.png", rl.Vector3{1.0, 0.01, 1.0})
     game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
-
-    game_make_animations(game=game, path="assets/textures/flame2/Sprite-000", start_anim=1, max_anim=7, layer="PROPS")
-    game_make_bb(game)
+    game.flames, game.num_flames_arr, game.flame_animations_arr = 
+        game_make_level_animations(game=game, path="assets/textures/flame2/Sprite-000", start_anim=1, max_anim=7, layer="PROPS")
+    game_make_boundingboxes(game)
     game.debug = true
 }
 
@@ -63,6 +61,9 @@ game_draw :: proc(game: Game){
     draw_floor_layer_from_map(game.current_level["FLOOR"]^, game.floor)
     draw_full_wall_from_layer(game.current_level["WALL"]^, game.wall)
     draw_doors_from_layer(game.current_level["DOORS"]^, game.door)
+    for &fl in game.flame_animations_arr[game.current_level_id]{
+        draw_animation_model(&fl, 1.0)
+    }
     if game.debug{
         for bb in game.walls_bb{
             center := (bb.max + bb.min) / 2
@@ -76,7 +77,6 @@ game_draw :: proc(game: Game){
     }
 }
 
-
 game_update :: proc(game: ^Game) {
     dt := rl.GetFrameTime()
     move_speed := game.player.speed * dt
@@ -86,8 +86,9 @@ game_update :: proc(game: ^Game) {
     game.player.pitch -= mouse_delta.y * game.player.sensitivity
 
     max_pitch: f32 = math.PI / 2.0 - 0.01
-    // game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
-    game.player.pitch = 0
+    game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
+    // to lock the mouse vertical movement
+    // game.player.pitch = 0
 
     forward := rl.Vector3{
         math.sin(game.player.yaw),
@@ -162,10 +163,11 @@ game_update :: proc(game: ^Game) {
     game.camera.target = game.camera.position + direction
 }
 
-
 game_switch_level :: proc(game: ^Game){
-    if game.current_level_id == 1{
-        game.current_level_id = 2
+    fmt.printfln("current level id: %v", game.current_level_id)
+    fmt.printfln("current level data: %v", game.current_level)
+    if game.current_level_id == 0{
+        game.current_level_id = 1
         game.current_level = &game.level2
         // TO DO: need the door location for spawning the player
 
@@ -175,19 +177,21 @@ game_switch_level :: proc(game: ^Game){
         // -> the capacity (cap()) remains intact
         delete(game.walls_bb)
         delete(game.doors_bb)
-        game_make_bb(game)
+        game_make_boundingboxes(game)
     } else {
-        game.current_level_id = 1
+        game.current_level_id = 0
         game.current_level = &game.level1
 
         // clear existing bb before updating them
         delete(game.walls_bb)
         delete(game.doors_bb)
-        game_make_bb(game)
+        game_make_boundingboxes(game)
     }
+    fmt.printfln("after: current level id: %v", game.current_level_id)
+    fmt.printfln("after: current level data: %v", game.current_level)
 }
 
-game_make_bb :: proc(game: ^Game){
+game_make_boundingboxes :: proc(game: ^Game){
     game.walls_bb = make_boundary_boxes(
         texture_layer = game.current_level["WALL"]^, 
         width = 1.0, 
@@ -205,38 +209,63 @@ game_make_bb :: proc(game: ^Game){
     )
 }
 
-game_make_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, layer: string){
-    game.flames = make_model_from_animations(
-        // path="assets/textures/flame/frame_00", 
+game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, layer: string) -> ([dynamic]rl.Model, [2]i32, [2][dynamic]Animation_To_Model){
+    num_flames: [2]i32
+    flame_animations: [2][dynamic]Animation_To_Model
+    flames := make_model_from_animations(
         path=path, 
         start_anim=start_anim, 
         max_anim=max_anim,
         mesh_cube = [3]f32{1.0, 1.0, 0.0001},
     )
-    game.num_flames = len(game.current_level[layer].data)
-    game.flame_animations = make([dynamic]Animation_To_Model, 0, game.num_flames)
-
-    i, j: i32
-    x, y, z: f32
-    data := game.current_level["PROPS"].data
-    min_x: f32 = -TILE_X/2 + 0.5
-    for id in 0..<len(data){
-        if data[id]>0{
-            j = i32(id/10)
-            i = i32(id) - j*10
-            x = min_x + f32(i*1.0)
-            y = 0.5
-            z = min_x + f32(j*1.0)
-            flame := Animation_To_Model{
-                frames = game.flames,
-                position = {x, y, z},
-                animation_frame_length = 0.1,
-                animation_current_frame = 0,
-                run_frame_timer = 0.0,
-            }
-            append(&game.flame_animations, flame)
+    for level_id in 0..<2{
+        fmt.printfln("processing layer: %v", level_id)
+        if level_id == 0{
+            game.current_level_id = 0
+            game.current_level = &game.level1
+        } else{
+            game.current_level_id = 1
+            game.current_level = &game.level2
         }
-    } 
+
+        data := game.current_level["PROPS"].data
+        tmp_num_flames: i32 = 0
+        for id in 0..<len(data){
+            if data[id] > 0 {
+                    tmp_num_flames += 1
+                }
+            }
+        fmt.printfln("num elements: %v", tmp_num_flames)
+        num_flames[level_id] = tmp_num_flames
+        animations := make([dynamic]Animation_To_Model, 0, num_flames[level_id])
+        fmt.printfln("data: %v", data)
+        i, j: i32
+        x, y, z: f32
+        min_x: f32 = -TILE_X/2 + 0.5
+        for id in 0..<len(data){
+            if data[id]>0{
+                j = i32(id/10)
+                i = i32(id) - j*10
+                x = min_x + f32(i*1.0)
+                y = 0.5
+                z = min_x + f32(j*1.0)
+                flame := Animation_To_Model{
+                    frames = flames,
+                    position = {x, y, z},
+                    animation_frame_length = 0.1,
+                    animation_current_frame = 0,
+                    run_frame_timer = 0.0,
+                }
+                append(&animations, flame)
+            }
+        }
+        flame_animations[level_id] = animations 
+    }
+    // reset the current_level_id to 0
+    // it has been overwriten when finding the data[id]>0
+    game.current_level_id = 0
+    game.current_level = &game.level1
+    return flames, num_flames, flame_animations
 }
 
 game_defer_delete :: proc(game: Game){
@@ -249,6 +278,7 @@ game_defer_delete :: proc(game: Game){
     defer delete(game.walls_bb)
     defer delete(game.doors_bb)
 
-    defer delete(game.flame_animations)
+    defer delete(game.flame_animations_arr[0])
+    defer delete(game.flame_animations_arr[1])
     defer delete(game.flames)
 }
