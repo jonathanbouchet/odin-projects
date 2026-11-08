@@ -93,30 +93,6 @@ main :: proc() {
     game := game_init()
     game_load(&game)
 
-    game.player = Player{
-        position = rl.Vector3{0, 0, 4},
-        velocity = {},
-        speed = 5,
-        eyes = 1,
-        yaw = 0.0,
-        pitch = 0.0,
-        sensitivity = 0.003,
-        is_colliding = false,
-    }
-
-    game.camera = rl.Camera3D{
-        up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
-        target     = { 0.0, 1.0, 10.0},
-        fovy       = 60.0,               // Camera field-of-view Y
-        projection = .PERSPECTIVE,       // Camera projection type
-    }
-
-    view_width := settings.WIDTH
-    view_height := settings.HEIGHT
-
-    game_view := rl.LoadRenderTexture(i32(view_width), i32(view_height))
-    defer rl.UnloadRenderTexture(game_view)
-
     // ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
     // hearts:= [3]rl.Texture{
     //     rl.LoadTexture("assets/textures/Heart_Full_64.png"),
@@ -126,12 +102,14 @@ main :: proc() {
 
     rl.DisableCursor() 
 
+    fmt.printfln("game.view_width: %v, game.view_height: %v", game.view_width, game.view_height)
+
     for !rl.WindowShouldClose() {
         // update
         game_update(&game)
 
         // render
-        rl.BeginTextureMode(game_view)
+        rl.BeginTextureMode(game.view)
         rl.ClearBackground(BACKGROUND_BLACK)
         rl.BeginMode3D(game.camera)
 
@@ -146,8 +124,8 @@ main :: proc() {
         // draw UI icons OUTSIDE mode3D
         // draw_button(heart_button)
         rl.DrawTextureRec(
-            game_view.texture,
-            rl.Rectangle{0, 0, f32(view_width), -f32(view_height)},
+            game.view.texture,
+            rl.Rectangle{0, 0, f32(game.view_width), -f32(game.view_height)},
             rl.Vector2{0, 0},
             rl.WHITE,
         )

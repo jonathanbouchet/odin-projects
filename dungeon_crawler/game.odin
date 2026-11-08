@@ -5,6 +5,9 @@ import "core:math"
 import rl "vendor:raylib"
 
 Game :: struct {
+    view_width: i32,
+    view_height: i32,
+    view: rl.RenderTexture2D,
     camera: rl.Camera3D,
     player: Player,
     map_data1: Map_Data,
@@ -26,6 +29,9 @@ Game :: struct {
 
 game_init :: proc() -> Game{
     game: Game
+    game.view_width = WIDTH
+    game.view_height = HEIGHT
+    game.view = rl.LoadRenderTexture(i32(game.view_width), i32(game.view_height))
     return game
 }
 
@@ -54,6 +60,24 @@ game_load :: proc(game: ^Game){
     game.flames, game.num_flames_arr, game.flame_animations_arr = 
         game_make_level_animations(game=game, path="assets/textures/flame2/Sprite-000", start_anim=1, max_anim=7, layer="PROPS")
     game_make_boundingboxes(game)
+
+    game.player = Player{
+        position = rl.Vector3{-1, 0, 5},
+        velocity = {},
+        speed = 5,
+        eyes = 1,
+        yaw = 0.0,
+        pitch = 0.0,
+        sensitivity = 0.003,
+        is_colliding = false,
+    }
+
+    game.camera = rl.Camera3D{
+        up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
+        target     = { 0.0, 1.0, 10.0},
+        fovy       = 60.0,               // Camera field-of-view Y
+        projection = .PERSPECTIVE,       // Camera projection type
+    }
     game.debug = true
 }
 
@@ -219,7 +243,6 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
         mesh_cube = [3]f32{1.0, 1.0, 0.0001},
     )
     for level_id in 0..<2{
-        fmt.printfln("processing layer: %v", level_id)
         if level_id == 0{
             game.current_level_id = 0
             game.current_level = &game.level1
@@ -235,10 +258,8 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
                     tmp_num_flames += 1
                 }
             }
-        fmt.printfln("num elements: %v", tmp_num_flames)
         num_flames[level_id] = tmp_num_flames
         animations := make([dynamic]Animation_To_Model, 0, num_flames[level_id])
-        fmt.printfln("data: %v", data)
         i, j: i32
         x, y, z: f32
         min_x: f32 = -TILE_X/2 + 0.5
@@ -269,6 +290,7 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
 }
 
 game_defer_delete :: proc(game: Game){
+    defer rl.UnloadRenderTexture(game.view)
     defer delete(game.map_data1.layers)
     defer delete(game.level1)
 
