@@ -93,18 +93,6 @@ main :: proc() {
     game := game_init()
     game_load(&game)
 
-    // defer delete(game.map_data1.layers)
-    // defer delete(game.level1)
-
-    // defer delete(game.map_data2.layers)
-    // defer delete(game.level2)
-
-    // defer delete(game.walls_bb)
-    // defer delete(game.doors_bb)
-
-    // defer delete(game.flame_animations)
-    // defer delete(game.flames)
-
     // coins := make_model_from_animations(
     //     path="assets/textures/silver_coin/", 
     //     start_anim=1, 

@@ -34,7 +34,7 @@ game_load :: proc(game: ^Game){
     // - read map data
     // - extract layers 
     // 2) load tiles and animations
-    // 3) make boundingboxes
+    // 3) make bounding boxes
 
     // read input data for 1 map
     game.map_data1 = read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
@@ -55,9 +55,7 @@ game_load :: proc(game: ^Game){
     game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
 
     game_make_animations(game=game, path="assets/textures/flame2/Sprite-000", start_anim=1, max_anim=7, layer="PROPS")
-
     game_make_bb(game)
-
     game.debug = true
 }
 
@@ -88,7 +86,8 @@ game_update :: proc(game: ^Game) {
     game.player.pitch -= mouse_delta.y * game.player.sensitivity
 
     max_pitch: f32 = math.PI / 2.0 - 0.01
-    game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
+    // game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
+    game.player.pitch = 0
 
     forward := rl.Vector3{
         math.sin(game.player.yaw),
