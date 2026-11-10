@@ -32,11 +32,14 @@ draw_debug :: proc(game: Game) {
     defer delete(player_pos_str)
     game_level_str := strings.clone_to_cstring(fmt.tprintf("LEVEL:%d", game.current_level_id))
     defer delete(game_level_str)
+    player_stats_str := strings.clone_to_cstring(fmt.tprintf("HP:%d, COINS: %v", game.player.HP, game.player.coins_collected))
+    defer delete(player_stats_str)
 
     rl.DrawFPS(0, 0)
     rl.DrawText(player_pos_str, 0, 20, 20, GREEN)
     rl.DrawText(player_colliding_str, 0, 40, 20, rl.RED if game.player.is_colliding else GREEN)
-    rl.DrawText(game_level_str, 0, 60, 20, GREEN)
+    rl.DrawText(player_stats_str, 0, 60, 20, GREEN)
+    rl.DrawText(game_level_str, 0, 80, 20, GREEN)
     rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, GREEN)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, GREEN)
 }
@@ -123,12 +126,7 @@ main :: proc() {
 
         // draw UI icons OUTSIDE mode3D
         // draw_button(heart_button)
-        rl.DrawTextureRec(
-            game.view.texture,
-            rl.Rectangle{0, 0, f32(game.view_width), -f32(game.view_height)},
-            rl.Vector2{0, 0},
-            rl.WHITE,
-        )
+        game_draw_ui_container(game)
 
         // draw_ui_panels(ui_rect, hearts)
         if game.debug{

@@ -19,6 +19,7 @@ Game :: struct {
     door: rl.Model,
     walls_bb: [dynamic]rl.BoundingBox,
     doors_bb: [dynamic]rl.BoundingBox,
+    coins_bb: [dynamic]rl.BoundingBox,
     debug: bool,
     current_level_id: i32,
     current_level: ^map[string]^Texture_Layer,
@@ -89,6 +90,8 @@ game_load :: proc(game: ^Game){
         pitch = 0.0,
         sensitivity = 0.003,
         is_colliding = false,
+        HP = 100,
+        coins_collected = 0,
     }
 
     game.camera = rl.Camera3D{
@@ -119,6 +122,11 @@ game_draw :: proc(game: Game){
         for do_bb in game.doors_bb{
             center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
+        }
+
+        for co_bb in game.coins_bb{
+            center := (co_bb.max + co_bb.min) / 2
+            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
         }
     }
 }
@@ -164,6 +172,7 @@ game_update :: proc(game: ^Game) {
     // Move and resolve X first.
     game.player.position.x += move.x
     player_bb := player_bounding_box_adjusted(game.player)
+
     for wall in game.walls_bb {
         if rl.CheckCollisionBoxes(wall, player_bb) {
             game.player.position.x -= move.x
@@ -191,6 +200,15 @@ game_update :: proc(game: ^Game) {
         if rl.CheckCollisionBoxes(wall, player_bb) {
             game.player.position.z -= move.z
             game.player.is_colliding = true
+            break
+        }
+    }
+    
+    //testing
+    for coin in game.coins_bb {
+        if rl.CheckCollisionBoxes(coin, player_bb) {
+            game.player.is_colliding = true
+            game.player.coins_collected += 1
             break
         }
     }
@@ -223,6 +241,7 @@ game_switch_level :: proc(game: ^Game){
         // -> the capacity (cap()) remains intact
         delete(game.walls_bb)
         delete(game.doors_bb)
+        delete(game.coins_bb)
         game_make_boundingboxes(game)
     } else {
         game.current_level_id = 0
@@ -231,6 +250,7 @@ game_switch_level :: proc(game: ^Game){
         // clear existing bb before updating them
         delete(game.walls_bb)
         delete(game.doors_bb)
+        delete(game.coins_bb)
         game_make_boundingboxes(game)
     }
     fmt.printfln("after: current level id: %v", game.current_level_id)
@@ -252,6 +272,13 @@ game_make_boundingboxes :: proc(game: ^Game){
         height = 1.0,
         depth = 1.0,
         collider_type="door",
+    )
+    game.coins_bb = make_boundary_boxes(
+        texture_layer = game.current_level["COINS"]^,
+        width = 1.0,
+        height = 0.5,
+        depth = 1.0,
+        collider_type="coin",
     )
 }
 
@@ -316,6 +343,15 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
     return frame_animations, num_locations, animations_data
 }
 
+game_draw_ui_container :: proc(game: Game){
+    rl.DrawTextureRec(
+            game.view.texture,
+            rl.Rectangle{0, 0, f32(game.view_width), -f32(game.view_height)},
+            rl.Vector2{0, 0},
+            rl.WHITE,
+        )
+}
+
 game_defer_delete :: proc(game: Game){
     defer rl.UnloadRenderTexture(game.view)
     defer delete(game.map_data1.layers)
@@ -330,4 +366,8 @@ game_defer_delete :: proc(game: Game){
     defer delete(game.flame_animations_arr[0])
     defer delete(game.flame_animations_arr[1])
     defer delete(game.flames)
+
+    defer delete(game.coins_animations_arr[0])
+    defer delete(game.coins_animations_arr[1])
+    defer delete(game.coins)
 }

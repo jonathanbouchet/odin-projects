@@ -38,6 +38,8 @@ Player :: struct {
     pitch: f32,
     sensitivity: f32,
     is_colliding: bool,
+    HP: i32,
+    coins_collected: i32,
 }
 
 player_bounding_box :: proc(player: Player) -> rl.BoundingBox {
