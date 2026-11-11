@@ -362,6 +362,7 @@ game_defer_delete :: proc(game: Game){
 
     defer delete(game.walls_bb)
     defer delete(game.doors_bb)
+    defer delete(game.coins_bb)
 
     defer delete(game.flame_animations_arr[0])
     defer delete(game.flame_animations_arr[1])
