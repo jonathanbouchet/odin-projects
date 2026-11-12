@@ -20,7 +20,7 @@ Game :: struct {
     walls_bb: [dynamic]rl.BoundingBox,
     doors_bb: [dynamic]rl.BoundingBox,
     coins_bb: [dynamic]rl.BoundingBox,
-    debug: bool,
+    debug: bool, // flag to draw bounding boxes outlines
     current_level_id: i32,
     current_level: ^map[string]^Texture_Layer,
     flames: [dynamic]rl.Model,
@@ -32,6 +32,9 @@ Game :: struct {
 }
 
 game_init :: proc() -> Game{
+    /*
+     - init game main window and rendering window (= gameplay)
+    */
     game: Game
     game.view_width = WIDTH
     game.view_height = HEIGHT
@@ -46,7 +49,7 @@ game_load :: proc(game: ^Game){
     // 2) load tiles and animations
     // 3) make bounding boxes
 
-    // read input data for 1 map
+    // read input data for maps
     game.map_data1 = read_input_data("assets/maps/test4_v2_10x10.tmj", Map_Data)
     fmt.printfln("# of layers in map 1: %v", len(game.map_data1.layers))
     game.level1 = extract_all_layers(game.map_data1)
@@ -57,13 +60,16 @@ game_load :: proc(game: ^Game){
     game.level2 = extract_all_layers(game.map_data2)
     fmt.printfln("game level 2: %v" ,game.level2)
 
+    // level 1 is the starter one
     game.current_level_id = 1
     game.current_level = &game.level1
 
+    // load and make models used in maps
     game.wall = load_and_make_model("assets/textures/wall_minimalist_32x32_v3.png", rl.Vector3{1.0, 1.0, 1.0})
     game.floor = load_and_make_model("assets/textures/floor_minimalist_32x32.png", rl.Vector3{1.0, 0.01, 1.0})
     game.door = load_and_make_model("assets/textures/door_minimalist_32x32.png", rl.Vector3{1.0, 1.0, 0.0001})
-    // flame animations
+
+    // make flame animations
     game.flames, game.num_flames_arr, game.flame_animations_arr = game_make_level_animations(
         game=game, 
         path="assets/textures/flame3/flame_animation_00", 
@@ -72,7 +78,7 @@ game_load :: proc(game: ^Game){
         animation_frame_length=0.2,
         layer="PROPS")
 
-    // coin animations
+    // make coin animations
     game.coins, game.num_coins_arr, game.coins_animations_arr = game_make_level_animations(
         game=game, 
         path="assets/textures/coin_v2/Coin_frame_00", 
@@ -81,8 +87,10 @@ game_load :: proc(game: ^Game){
         animation_frame_length=0.1,
         layer="COINS")
 
+    // make bounding boxes for models 
     game_make_boundingboxes(game)
 
+    // add player
     game.player = Player{
         position = rl.Vector3{-1, 0, 5},
         velocity = {},
@@ -96,6 +104,7 @@ game_load :: proc(game: ^Game){
         coins_collected = 0,
     }
 
+    // add camera
     game.camera = rl.Camera3D{
         up         = { 0.0, 1.0, 0.0 },  // Camera up vector (rotation towards target)
         target     = { 0.0, 1.0, 10.0},
@@ -106,9 +115,19 @@ game_load :: proc(game: ^Game){
 }
 
 game_draw :: proc(game: Game){
+    /*
+    draw objects in the current level:
+    - floor
+    - walls
+    - door
+    - objects with animations
+    */
+    // static objects
     draw_floor_layer_from_map(game.current_level["FLOOR"]^, game.floor)
     draw_full_wall_from_layer(game.current_level["WALL"]^, game.wall)
     draw_doors_from_layer(game.current_level["DOORS"]^, game.door)
+
+    // animations
     for &fl in game.flame_animations_arr[game.current_level_id]{
         draw_animation_model(&fl, 1.0)
     }
@@ -137,6 +156,14 @@ game_draw :: proc(game: Game){
 }
 
 game_update :: proc(game: ^Game) {
+    /*
+    Game update:
+    - update player yaw, pitch according Mouse movement
+    - get input from KB for payer movement
+    - move player
+    - check for collisions(), in X and Z separately) of player with walls, doors
+    - update camera according the player position
+    */
     dt := rl.GetFrameTime()
     move_speed := game.player.speed * dt
 
@@ -233,6 +260,10 @@ game_update :: proc(game: ^Game) {
 }
 
 game_switch_level :: proc(game: ^Game){
+    /*
+    - switch between levels
+    - for now, only 2 levels so te switch is done by alternating btw both
+    */
     fmt.printfln("before: current level id: %v", game.current_level_id)
     fmt.printfln("before: current level data: %v", game.current_level)
     if game.current_level_id == 0{
@@ -269,6 +300,10 @@ game_switch_level :: proc(game: ^Game){
 }
 
 game_make_boundingboxes :: proc(game: ^Game){
+    /*
+    - make arrays of bounding boxes for the current level
+    - this is recalculated every time there is a level switch
+    */
     game.walls_bb = make_boundary_boxes(
         texture_layer = game.current_level["WALL"]^, 
         width = 1.0, 
@@ -298,6 +333,10 @@ game_make_boundingboxes :: proc(game: ^Game){
 }
 
 game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, animation_frame_length: f32, layer: string) -> ([dynamic]rl.Model, [2]i32, [2][dynamic]Animation_To_Model){
+    /*
+    - for each level, and for each of the textures with animations, store animations (= list of png)
+    - this is done only once
+    */
     fmt.printfln("LEVEL: %v, LAYER: %v", game.current_level_id, layer)
     num_locations: [2]i32
     animations_data: [2][dynamic]Animation_To_Model
@@ -359,6 +398,9 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
 }
 
 game_draw_ui_container :: proc(game: Game){
+    /*
+    - draw the flat UI container
+    */
     rl.DrawTextureRec(
             game.view.texture,
             rl.Rectangle{0, 0, f32(game.view_width), -f32(game.view_height)},
@@ -368,6 +410,7 @@ game_draw_ui_container :: proc(game: Game){
 }
 
 game_defer_delete :: proc(game: Game){
+    // cleanup when game closes
     defer rl.UnloadRenderTexture(game.view)
     defer delete(game.map_data1.layers)
     defer delete(game.level1)

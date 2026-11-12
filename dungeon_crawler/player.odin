@@ -3,6 +3,7 @@ package main
 import rl "vendor:raylib"
 
 clamp_f32 :: proc(v, min_value, max_value: f32) -> f32 {
+    // clamp a f32 value between min and max
     if v < min_value {
         return min_value
     }
@@ -14,6 +15,7 @@ clamp_f32 :: proc(v, min_value, max_value: f32) -> f32 {
 
 
 bool_to_32 :: proc(value: bool) -> f32 {
+    // convert boolean to f32
     if value {
         return 1.0
     } else{
@@ -22,6 +24,7 @@ bool_to_32 :: proc(value: bool) -> f32 {
 }
 
 f32_to_bool :: proc(value: f32) -> bool {
+    // convert f32 to boolean
     if value == 1.0{
         return true
     } else{
@@ -49,6 +52,9 @@ player_bounding_box :: proc(player: Player) -> rl.BoundingBox {
 }
 
 player_bounding_box_adjusted :: proc(player: Player) -> rl.BoundingBox {
+    /*
+    - return a bounding box around the player current position corrected by half width (assuming a player of width of 1 unit)
+    */
     half_width: f32 = 0.25
     height: f32 = 1.0
 

@@ -35,7 +35,6 @@ draw_button :: proc(b: Button) {
 }
 
 draw_ui_panels :: proc(ui_rect: rl.Rectangle, hearts: [3]rl.Texture) {
-    // ui_rect := rl.Rectangle{600,0, 200, 600}
     rl.DrawRectangleLinesEx(ui_rect, 4, OUTLINE_UI)
     for i: i32 = 0; i< len(hearts); i+=1{
         // rl.DrawTextureV(hearts[i], rl.Vector2{f32(600) + f32(i)*f32(hearts[i].width), 0}, rl.RAYWHITE)
