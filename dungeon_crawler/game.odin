@@ -66,9 +66,10 @@ game_load :: proc(game: ^Game){
     // flame animations
     game.flames, game.num_flames_arr, game.flame_animations_arr = game_make_level_animations(
         game=game, 
-        path="assets/textures/flame2/Sprite-000", 
+        path="assets/textures/flame3/flame_animation_00", 
         start_anim=1, 
         max_anim=7, 
+        animation_frame_length=0.2,
         layer="PROPS")
 
     // coin animations
@@ -76,7 +77,8 @@ game_load :: proc(game: ^Game){
         game=game, 
         path="assets/textures/coin_v2/Coin_frame_00", 
         start_anim=1, 
-        max_anim=7, 
+        max_anim=7,
+        animation_frame_length=0.1,
         layer="COINS")
 
     game_make_boundingboxes(game)
@@ -110,8 +112,10 @@ game_draw :: proc(game: Game){
     for &fl in game.flame_animations_arr[game.current_level_id]{
         draw_animation_model(&fl, 1.0)
     }
-    for &co in game.coins_animations_arr[game.current_level_id]{
-        draw_animation_model(&co, 1.0)
+    if game.current_level["COINS"]!= nil{
+        for &co in game.coins_animations_arr[game.current_level_id]{
+            draw_animation_model(&co, 1.0)
+        }
     }
     if game.debug{
         for bb in game.walls_bb{
@@ -123,10 +127,11 @@ game_draw :: proc(game: Game){
             center := (do_bb.max + do_bb.min) / 2
             rl.DrawCubeWiresV(center, rl.Vector3{0.1, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
         }
-
-        for co_bb in game.coins_bb{
-            center := (co_bb.max + co_bb.min) / 2
-            rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
+        if game.current_level["COINS"]!= nil{
+            for co_bb in game.coins_bb{
+                center := (co_bb.max + co_bb.min) / 2
+                rl.DrawCubeWiresV(center, rl.Vector3{1.0, 1.0, 1.0}, GREEN if !game.player.is_colliding else rl.RED)
+            }
         }
     }
 }
@@ -228,8 +233,8 @@ game_update :: proc(game: ^Game) {
 }
 
 game_switch_level :: proc(game: ^Game){
-    fmt.printfln("current level id: %v", game.current_level_id)
-    fmt.printfln("current level data: %v", game.current_level)
+    fmt.printfln("before: current level id: %v", game.current_level_id)
+    fmt.printfln("before: current level data: %v", game.current_level)
     if game.current_level_id == 0{
         game.current_level_id = 1
         game.current_level = &game.level2
@@ -241,7 +246,11 @@ game_switch_level :: proc(game: ^Game){
         // -> the capacity (cap()) remains intact
         delete(game.walls_bb)
         delete(game.doors_bb)
-        delete(game.coins_bb)
+        if game.current_level["COINS"] != nil{
+            delete(game.coins_bb)
+        }
+        fmt.printfln("after: current level id: %v", game.current_level_id)
+        fmt.printfln("after: current level data: %v", game.current_level)
         game_make_boundingboxes(game)
     } else {
         game.current_level_id = 0
@@ -250,11 +259,13 @@ game_switch_level :: proc(game: ^Game){
         // clear existing bb before updating them
         delete(game.walls_bb)
         delete(game.doors_bb)
-        delete(game.coins_bb)
+        if game.current_level["COINS"] != nil{
+            delete(game.coins_bb)
+        }
+        fmt.printfln("after: current level id: %v", game.current_level_id)
+        fmt.printfln("after: current level data: %v", game.current_level)
         game_make_boundingboxes(game)
     }
-    fmt.printfln("after: current level id: %v", game.current_level_id)
-    fmt.printfln("after: current level data: %v", game.current_level)
 }
 
 game_make_boundingboxes :: proc(game: ^Game){
@@ -273,16 +284,20 @@ game_make_boundingboxes :: proc(game: ^Game){
         depth = 1.0,
         collider_type="door",
     )
-    game.coins_bb = make_boundary_boxes(
-        texture_layer = game.current_level["COINS"]^,
-        width = 1.0,
-        height = 0.5,
-        depth = 1.0,
-        collider_type="coin",
-    )
+    // fix me: when there is no COIN layer for that level, do not make the boundary boxes
+    if game.current_level["COINS"] != nil{
+        fmt.printfln("making boundary boxes for coins")
+        game.coins_bb = make_boundary_boxes(
+            texture_layer = game.current_level["COINS"]^,
+            width = 1.0,
+            height = 0.5,
+            depth = 1.0,
+            collider_type="coin",
+        )
+    }
 }
 
-game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, layer: string) -> ([dynamic]rl.Model, [2]i32, [2][dynamic]Animation_To_Model){
+game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, max_anim: i32, animation_frame_length: f32, layer: string) -> ([dynamic]rl.Model, [2]i32, [2][dynamic]Animation_To_Model){
     fmt.printfln("LEVEL: %v, LAYER: %v", game.current_level_id, layer)
     num_locations: [2]i32
     animations_data: [2][dynamic]Animation_To_Model
@@ -325,7 +340,7 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
                         animation := Animation_To_Model{
                             frames = frame_animations,
                             position = {x, y, z},
-                            animation_frame_length = 0.1,
+                            animation_frame_length = animation_frame_length,
                             animation_current_frame = 0,
                             run_frame_timer = 0.0,
                         }
@@ -336,7 +351,7 @@ game_make_level_animations :: proc(game: ^Game, path: string, start_anim: i32, m
             }
         }
     }
-    // reset the current_level_id to 0
+    // reset the current_level_id to 0 = the first loaded level
     // it has been overwriten when finding the data[id]>0
     game.current_level_id = 0
     game.current_level = &game.level1
