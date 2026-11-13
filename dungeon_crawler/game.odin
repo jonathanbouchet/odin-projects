@@ -237,10 +237,15 @@ game_update :: proc(game: ^Game) {
     }
     
     //testing
-    for coin in game.coins_bb {
+    for coin, idx in game.coins_bb {
         if rl.CheckCollisionBoxes(coin, player_bb) {
             game.player.is_colliding = true
             game.player.coins_collected += 1
+            // remove existing coin from list of bounding boxes
+            ordered_remove(&game.coins_bb, idx)
+            current_level := game.current_level_id
+            fmt.printfln("collision with coin: current level ID: %v", game.current_level_id)
+            game.num_coins_arr[current_level] -= 1
             break
         }
     }
