@@ -62,7 +62,11 @@ extract_layer_data :: proc (data: Map_Data, layer_id: i32) -> ^Texture_Layer {
 }
 
 extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
-    // m := make(map[int]^Texture_Layer)
+    /*
+    - read a map tmj file and extracts its data for eahc of the 5 layers
+    - initialized to nil, stays nil if the map does not have that layer
+    - assembled all layer:data into a hash_table
+    */
 
     floor_layer: ^Texture_Layer = nil
     wall_layer: ^Texture_Layer = nil
@@ -107,6 +111,9 @@ extract_all_layers :: proc (map_data: Map_Data) -> map[string]^Texture_Layer {
 }
 
 load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
+    /*
+    - load a static texture and aaply it to a Model
+    */
     path_cstring := strings.clone_to_cstring(path)
     defer delete(path_cstring)
     texture := rl.LoadTexture(path_cstring) // 32x32 pixels minimalist

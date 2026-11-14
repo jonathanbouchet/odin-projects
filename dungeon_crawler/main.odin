@@ -45,6 +45,7 @@ draw_debug :: proc(game: Game) {
 }
 
 main :: proc() {
+    // entry point
     tracking: mem.Tracking_Allocator
     mem.tracking_allocator_init(&tracking, context.allocator)
     context.allocator = mem.tracking_allocator(&tracking)
