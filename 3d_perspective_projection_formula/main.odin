@@ -1,83 +1,152 @@
 package main
 
-import "core:fmt"
-import "core:math"
 import rl "vendor:raylib"
+import "core:math"
 
-BACKGROUND :: rl.Color{0, 0, 28, 255}
-GREEN :: rl.Color{57, 255, 20, 255}
-WIDTH :: 600
-HEIGHT :: 600
-SIZE :: 10
-
-Point_Screen :: struct{
-    x: f32,
-    y: f32,
+Vec3 :: struct {
+	x, y, z: f32,
 }
 
-Point_Window :: struct {
-    x: f32,
-    y: f32,
+Point2 :: struct {
+	x, y: f32,
 }
 
-convert_screen_game :: proc(a: [2]f32) -> [2]f32 {
-    tmp: [2]f32
-    tmp[0] = (a[0] + 1) / 2 * WIDTH - SIZE / 2
-    tmp[1] = (1 - (a[1] + 1) / 2) * HEIGHT - SIZE / 2
-    return tmp
-} 
+window_width  :: 600
+window_height :: 600
+default_size  :: 10
 
-project_point :: proc(a: [3]f32, dz: f32) -> [2]f32 {
-    tmp : [2]f32
-    t := a[2] + dz
-    tmp[0] = a[0] / t
-    tmp[1] = a[1] / t
-    return tmp
+default_color :: rl.GREEN
+
+vals := [8]Vec3{
+	{-0.25,  0.25,  0.25},
+	{-0.25, -0.25,  0.25},
+	{ 0.25,  0.25,  0.25},
+	{ 0.25, -0.25,  0.25},
+	{-0.25,  0.25, -0.25},
+	{-0.25, -0.25, -0.25},
+	{ 0.25,  0.25, -0.25},
+	{ 0.25, -0.25, -0.25},
 }
 
-draw_vertex :: proc(a: [2]f32) {
-    rl.DrawRectangleV(a, rl.Vector2{SIZE, SIZE}, GREEN)
+// Fixed-size paths avoid dynamically sized nested slices.
+edge_paths := [6][5]int{
+	{0, 1, 3, 2, 0},
+	{4, 5, 7, 6, 4},
+	{0, 4, 0, 0, 0},
+	{2, 6, 0, 0, 0},
+	{1, 5, 0, 0, 0},
+	{3, 7, 0, 0, 0},
 }
 
-draw_vertices :: proc(points: [8]rl.Vector3, dz: f32) {
-    for point in points{
-        draw_vertex(convert_screen_game(project_point(point, dz)))
-    }
+edge_path_lengths := [6]int{5, 5, 2, 2, 2, 2}
+
+project :: proc(x, y, z: f32) -> Point2 {
+	// The supplied model and dz keep z nonzero. If you later animate
+	// translation, guard against z approaching zero here.
+	projected_x := x / z
+	projected_y := y / z
+
+	screen_x := (projected_x + 1) * 0.5 * f32(window_width) -
+		f32(default_size) * 0.5
+	screen_y := (1 - (projected_y + 1) * 0.5) * f32(window_height) -
+		f32(default_size) * 0.5
+
+	return {screen_x, screen_y}
 }
 
-main :: proc(){
-    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
-    rl.InitWindow(WIDTH, HEIGHT, "projection 3D")
-    defer rl.CloseWindow()
-    rl.SetTargetFPS(60)
+transform_vertex :: proc(v: Vec3, dz, da: f32) -> Point2 {
+	c := f32(math.cos(f64(da)))
+	s := f32(math.sin(f64(da)))
 
-    a := rl.Vector3{ 0.5,  0.5, 0.5}
-    b := rl.Vector3{ 0.5, -0.5, 0.5}
-    c := rl.Vector3{-0.5,  0.5, 0.5}
-    d := rl.Vector3{-0.5, -0.5, 0.5}
-    e := rl.Vector3{ 0.5,  0.5, -0.5}
-    f := rl.Vector3{ 0.5, -0.5, -0.5}
-    g := rl.Vector3{-0.5,  0.5, -0.5}
-    h := rl.Vector3{-0.5, -0.5, -0.5}
+	// Rotate in the xz plane, then translate along z.
+	x := v.x*c - v.z*s
+	y := v.y
+	z := v.x*s + v.z*c + dz
 
-    points:= [8]rl.Vector3{a, b, c, d, e, f, g, h}
+	return project(x, y, z)
+}
 
-    dz:= f32(1.0)
-  
-    for !rl.WindowShouldClose(){
+draw_vertices :: proc(points: [8]Point2) {
+	size := f32(default_size)
+	for p in points {
+		rl.DrawRectangleV(
+			{f32(int(p.x)), f32(int(p.y))},
+			{size, size},
+			default_color,
+		)
+	}
+}
 
-        // update
-        dt:= rl.GetFrameTime()
-        dz += dt
+draw_lines :: proc(points: [8]Point2) {
+	half_size := f32(default_size) * 0.5
 
-        // render
-        rl.BeginDrawing()
-        rl.ClearBackground(BACKGROUND)
+	for path_index in 0..<len(edge_paths) {
+		path := edge_paths[path_index]
+		path_length := edge_path_lengths[path_index]
 
-        draw_vertices(points, dz)
+		for i in 0..<path_length-1 {
+			p0 := points[path[i]]
+			p1 := points[path[i+1]]
 
-        rl.DrawLineV(rl.Vector2{0, HEIGHT/2}, {WIDTH, HEIGHT/2}, rl.RED)
-        rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, rl.RED)
-        rl.EndDrawing()
-    }
+			rl.DrawLine(
+				i32(p0.x + half_size),
+				i32(p0.y + half_size),
+				i32(p1.x + half_size),
+				i32(p1.y + half_size),
+				default_color,
+			)
+		}
+	}
+}
+
+main :: proc() {
+	rl.InitWindow(window_width, window_height, "test")
+	defer rl.CloseWindow()
+
+	rl.SetTargetFPS(60)
+
+	dz: f32 = 1
+	da: f32 = 0
+	active_ptr: i32 = 0
+	slider_value: f32 = 3.14
+
+	for !rl.WindowShouldClose() {
+		rl.GuiToggleGroup(
+			{20, 20, 100, 20},
+			"vertices;lines;both",
+			&active_ptr,
+		)
+		rl.GuiSlider(
+			{20, 40, 100, 20},
+			"0",
+			"2pi",
+			&slider_value,
+			0,
+			6.28,
+		)
+
+		da += slider_value * rl.GetFrameTime()
+
+		// Project each vertex only once, then reuse it for drawing.
+		points: [8]Point2
+		for v, i in vals {
+			points[i] = transform_vertex(v, dz, da)
+		}
+
+		rl.BeginDrawing()
+		rl.ClearBackground(rl.BLACK)
+
+		switch active_ptr {
+		case 0:
+			draw_vertices(points)
+		case 1:
+			draw_lines(points)
+		case:
+			draw_lines(points)
+			draw_vertices(points)
+		}
+
+		rl.DrawFPS(20, 0)
+		rl.EndDrawing()
+	}
 }
