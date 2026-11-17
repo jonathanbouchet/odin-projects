@@ -4,8 +4,8 @@ import "core:fmt"
 import "core:mem"
 import rl "vendor:raylib"
 
-WIDTH :: 600
-HEIGHT :: 600
+WIDTH :: 640
+HEIGHT :: 640
 TILE_SIZE :: 32
 N_TILE :: 10
 FPS :: 60
@@ -18,6 +18,7 @@ Tile :: struct {
     j: i32,
     tile_id: i32,
     tile_data: [4][2]i32,
+    iso_tile_data: [4][2]f32,
 }
 
 World :: struct {
@@ -28,13 +29,14 @@ World :: struct {
     tiles: [N_TILE * N_TILE]Tile,
 }
 
-cartesian_to_isometric :: proc(i, j: i32, tile_width: i32, tile_height: i32) -> (i32, i32){
-    x_iso := (i - j)
-    y_iso := (i + j) / 2 
-    return x_iso, y_iso
+cartesian_to_isometric :: proc(x, y: f32, tile_width: i32, tile_height: i32) -> [2]f32{
+    tmp: [2]f32
+    tmp[0] = (x - y)
+    tmp[1] = (x + y) / 2 
+    return tmp
 }
 
-grid_to_world :: proc(grid_x, grid_y: i32, tile_size: i32) -> [4][2]i32{
+grid_to_world :: proc(grid_x, grid_y: i32, tile_size: i32) -> [4][2]i32 {
     tmp: [4][2]i32
     tmp[0][0], tmp[0][1] = grid_x * tile_size, grid_y * tile_size
     tmp[1][0], tmp[1][1] = grid_x * tile_size + tile_size, grid_y * tile_size
@@ -43,17 +45,38 @@ grid_to_world :: proc(grid_x, grid_y: i32, tile_size: i32) -> [4][2]i32{
     return tmp
 }
 
-make_world :: proc(w: World) -> [N_TILE * N_TILE]Tile{
+grid_to_iso :: proc(r: [4][2]i32) -> [4][2]f32 {
+    tmp: [4][2]f32
+    for i in 0..<4{
+        tmp[i] = cartesian_to_isometric(f32(r[i][0]), f32(r[i][1]), 32, 32)
+    }
+    return tmp
+}
+
+// make_world :: proc(w: World) -> [N_TILE * N_TILE]Tile{
+make_world :: proc(w: ^World) {
     tmp: [N_TILE * N_TILE]Tile
     cnt: i32 = 0
     for i in 0..<w.grid_length_x{
         for j in 0..<w.grid_length_y{
-            tile := Tile{i, j, cnt, grid_to_world(i, j, w.width)}
+            rect := grid_to_world(i, j, TILE_SIZE)
+            iso_rect := grid_to_iso(rect)
+            tile := Tile{i, j, cnt, rect, iso_rect}
             tmp[cnt] = tile
             cnt += 1
         }
     }
-    return tmp
+    w.tiles = tmp
+}
+
+draw_world :: proc(w: World) {
+    // cnt: i32
+    for tile_id in 0..<len(w.tiles){
+        tile := w.tiles[tile_id]
+        rect := rl.Rectangle{f32(tile.tile_data[0][0]), f32(tile.tile_data[0][1]), TILE_SIZE, TILE_SIZE}
+        rl.DrawRectangleLinesEx(rect, 1, rl.RED)
+        // rl.DrawRectangleRec(rect, rl.RAYWHITE)
+    }
 }
 
 draw_debug :: proc() {
@@ -116,14 +139,16 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
-    world:= World{grid_length_x=10, grid_length_y=10, width=WIDTH, height=HEIGHT}
-    make_world(world)
+    world:= World{grid_length_x=N_TILE, grid_length_y=N_TILE, width=WIDTH, height=HEIGHT}
+    // fmt.printfln("world: %v", world)
+    make_world(&world)
+    fmt.printfln("world: %v", world)
 
     for !rl.WindowShouldClose(){
         rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND_BLACK)
+        draw_world(world)
         draw_debug()
         rl.EndDrawing()
     }
-
 }
