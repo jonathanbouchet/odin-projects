@@ -184,7 +184,7 @@ show_memory :: proc() {
 main :: proc() {
     show_memory()
     // raylib initialization
-    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
     rl.SetTargetFPS(TARGET_FPS)
     defer rl.CloseWindow()

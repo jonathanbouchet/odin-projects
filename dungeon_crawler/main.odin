@@ -89,7 +89,7 @@ main :: proc() {
         mem.tracking_allocator_destroy(&tracking)
     }
     settings := set_game()
-    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon")
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)

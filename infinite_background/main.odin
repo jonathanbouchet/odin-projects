@@ -1,6 +1,5 @@
 package main
 
-import "vendor:vulkan"
 import "core:fmt"
 import "core:mem"
 import rl "vendor:raylib"
@@ -12,7 +11,7 @@ Animated_Texture :: struct {
     texture: rl.Texture,
     position: [2]f32,
     offset: f32,
-    speed: i32
+    speed: i32,
 }
 
 make_anim_texture :: proc (texture: rl.Texture, position: [2]f32, offset: f32, speed: i32) -> Animated_Texture {
@@ -20,7 +19,7 @@ make_anim_texture :: proc (texture: rl.Texture, position: [2]f32, offset: f32, s
         texture = texture, 
         position = position, 
         offset = offset, 
-        speed = speed
+        speed = speed,
     }
 }
 
@@ -37,7 +36,7 @@ Karl_Animations :: struct {
 Karl_Cat :: struct {
     animations: Karl_Animations,
     position: [2]f32,
-    speed: i32
+    speed: i32,
 }
 
 update_karl_animation :: proc (a: ^Karl_Animations){
@@ -108,7 +107,7 @@ main :: proc () {
 
         mem.tracking_allocator_destroy(&tracking)
     }
-
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, "parallax")
     defer rl.CloseWindow()
     rl.SetTargetFPS(60)

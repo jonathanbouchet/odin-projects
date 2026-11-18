@@ -99,6 +99,7 @@ main :: proc() {
         mem.tracking_allocator_destroy(&tracking)
     }
 
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Raylib 3D Camera Mouse Control")
     defer rl.CloseWindow()
 

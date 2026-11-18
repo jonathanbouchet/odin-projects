@@ -66,6 +66,7 @@ main :: proc() {
 
         mem.tracking_allocator_destroy(&tracking)
     }
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(WIDTH, HEIGHT, "character animation")
     rl.SetTargetFPS(FPS)
 
