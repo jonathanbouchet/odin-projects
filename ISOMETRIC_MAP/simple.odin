@@ -5,7 +5,6 @@ import "core:strings"
 import "core:mem"
 import "core:math"
 import rl "vendor:raylib"
-// import rl "/Users/jonathanbouchet/Downloads/raylib-5.5_macos"
 
 SCREEN_WIDTH :: 640
 SCREEN_HEIGHT :: 320
@@ -97,7 +96,7 @@ main :: proc() {
         mem.tracking_allocator_destroy(&tracking)
     }
     
-    // rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT})
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "isomap test")
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
