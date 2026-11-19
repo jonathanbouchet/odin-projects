@@ -8,11 +8,11 @@ import rl "vendor:raylib"
 
 SCREEN_WIDTH :: 640
 SCREEN_HEIGHT :: 320
-TILE_WIDTH :: 64
-TILE_HEIGHT :: 32
+TILE_WIDTH :: 128
+TILE_HEIGHT :: 64
 GRID_SIZE :: 20
 OFFSET_X :: SCREEN_WIDTH / 2
-OFFSET_Y :: 100
+OFFSET_Y :: 50
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
 BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255 } // light black
@@ -26,7 +26,7 @@ iso_to_screen :: proc(g_coord: [2]i32) -> [2]f32 {
     }
 }
 
-screen_to_iso :: proc(m_coord: [2]f32) -> [2]f32 {
+screen_to_iso :: proc(m_coord: rl.Vector2) -> [2]f32 {
     // Convert screen mouse coordinates to 2D isometric grid coordinates
     // Inverse transformation matrix logic
     x := m_coord[0] - OFFSET_X
@@ -101,8 +101,8 @@ main :: proc() {
     defer rl.CloseWindow()
     rl.SetTargetFPS(FPS)
 
-    hover: [2]f32
-    s: [2]f32
+    hover: rl.Vector2
+    s: rl.Vector2
     is_hovered: bool
     fill_color: rl.Color
     for !rl.WindowShouldClose(){
@@ -113,15 +113,15 @@ main :: proc() {
         // render
         rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND_BLACK)
-        for row in 0..<GRID_SIZE{
-            for col in 0..<GRID_SIZE{
+        for row: i32 = 0 ; row < GRID_SIZE ; row += 1{
+            for col: i32 = 0 ; col < GRID_SIZE ; col += 1{
                 //Calculate screen coordinates for the corners of the tile
-                s = iso_to_screen([2]i32{i32(col), i32(row)})
+                s = iso_to_screen([2]i32{col, row})
 
                 // Check if this specific tile is currently hovered
                 is_hovered = (0.0 <= hover[0] && hover[0] < GRID_SIZE && 
                               0.0 <= hover[1] && hover[1] < GRID_SIZE && 
-                              i32(hover[0]) == i32(col) && i32(hover[1]) == i32(row))
+                              i32(hover[0]) == col && i32(hover[1]) == row)
                 
                 //Define the 4 corners of the isometric diamond
                 p1 := rl.Vector2{s[0], s[1]}
