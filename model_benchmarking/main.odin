@@ -40,10 +40,14 @@ update_shader_values :: proc(
     )
 }
 
-draw_models :: proc(positions: []rl.Vector3, sizes: []rl.Vector3, model: rl.Model) {
-    for item in soa_zip(pos=positions, size=sizes) {
-        // fmt.printfln("pos: %v, size: %v", item.pos, item.size)
-        rl.DrawModelEx(model, item.pos, rl.Vector3{0.0, 0.0, 0.0}, 0.0, item.size, rl.RAYWHITE)
+draw_models :: proc(positions: []rl.Vector3, sizes: []rl.Vector3, model: rl.Model, car: rl.Model) {
+    for item, i in soa_zip(pos=positions, size=sizes) {
+        // fmt.printfln("i: %v pos: %v, size: %v", i, item.pos, item.size)
+        if i == len(positions) - 1{
+            rl.DrawModelEx(car, item.pos, rl.Vector3{0.0, 0.0, 0.0}, 0.0, item.size, rl.RAYWHITE)
+        }else{
+            rl.DrawModelEx(model, item.pos, rl.Vector3{0.0, 0.0, 0.0}, 0.0, item.size, rl.RAYWHITE)
+        }
     }
 }
 
@@ -157,14 +161,23 @@ main :: proc() {
 
     rl.SetTargetFPS(60)
 
+    // building
     model := rl.LoadModel("assets/building_A.gltf") // <- works, Load model
     defer rl.UnloadModel(model)
+    // car
+    car_model := rl.LoadModel("assets/car_stationwagon.gltf") // <- works, Load model
+    defer rl.UnloadModel(car_model)
 
     shader := rl.LoadShader("basic.vs", "basic.fs")
     for i in 0..<int(model.materialCount){
         model.materials[i].shader = shader
     }
+    for i in 0..<int(car_model.materialCount){
+        car_model.materials[i].shader = shader
+    }
     defer rl.UnloadShader(shader)
+
+    // car
 
     light_direction := rl.Vector3{-1.0, -1.0, -1.0}
     light_color := rl.Vector3{0.7, 0.7, 0.7}
@@ -205,7 +218,7 @@ main :: proc() {
         rl.BeginMode3D(camera)
         // Draw a grid and some simple geometry to see the rotation effect
         rl.DrawGrid(20, 2.0)
-        draw_models(data.positions, data.sizes, model)
+        draw_models(data.positions, data.sizes, model, car_model)
         rl.EndMode3D()
 
         imgui.Render()
