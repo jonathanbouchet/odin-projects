@@ -100,7 +100,7 @@ get_body_transform :: proc(id: b3.BodyId) -> rl.Matrix {
 
 entity :: struct {
     id: b3.BodyId,
-    model: rl.Model
+    model: rl.Model,
 }
 
 create_box :: proc(position: rl.Vector3, world_id: b3.WorldId) -> b3.BodyId {
@@ -145,6 +145,7 @@ create_sphere :: proc(radius: f32, position: rl.Vector3, world_id: b3.WorldId) -
 
 main :: proc() {
     // Initialize raylib
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(WIDTH, HEIGHT, "box3d")
     rl.SetTargetFPS(60)
     defer rl.CloseWindow()
@@ -257,7 +258,7 @@ main :: proc() {
                 sphere_body_id = create_sphere(
                     radius = sphere_radius, 
                     position = rl.Vector3{ 5.0, 5.0, -3.0 }, 
-                    world_id = world_id
+                    world_id = world_id,
                 )
                 b3.Body_ApplyLinearImpulseToCenter(sphere_body_id, rl.Vector3{ -2, 30, 0 }, true)
                 fmt.printfln("sphere created: %v", sphere_body_id)
@@ -305,7 +306,7 @@ main :: proc() {
         // floor
         rl.DrawModel(floor_model, rl.Vector3{ 0.0, -1.0, 0.0 }, 1.0, rl.Color{0, 0, 28, 255}) // should be half the thickness of the floor
         rl.DrawGrid(10, 2.0)
-        rl.EndMode3D();
+        rl.EndMode3D()
 
         imgui.Render()
 		rlimgui.render_draw_data(imgui.GetDrawData())
