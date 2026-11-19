@@ -38,6 +38,7 @@ update_shader_values :: proc(
 
 main :: proc() {
     // raylib window
+    rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "3D model")
     defer rl.CloseWindow()
 
