@@ -100,6 +100,7 @@ draw_lines :: proc(points: [8]Point2) {
 }
 
 main :: proc() {
+	rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
 	rl.InitWindow(window_width, window_height, "test")
 	defer rl.CloseWindow()
 
