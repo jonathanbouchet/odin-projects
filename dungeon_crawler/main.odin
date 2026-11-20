@@ -12,7 +12,7 @@ WIDTH_FULL :: 800
 HEIGHT_FULL:: 400
 FPS :: 60
 BACKGROUND :: rl.Color{0, 0, 28, 255}
-BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255 } // light black
+BACKGROUND_BLACK :: rl.Color{20, 20, 20, 255} // light black
 BACKGROUND_UI :: rl.Color{46, 34, 47, 255}
 OUTLINE_UI :: rl.Color{122, 48, 69, 255}
 GREEN :: rl.Color{57, 255, 20, 255}
@@ -88,7 +88,6 @@ main :: proc() {
 
         mem.tracking_allocator_destroy(&tracking)
     }
-    settings := set_game()
     rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
     rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon")
     defer rl.CloseWindow()

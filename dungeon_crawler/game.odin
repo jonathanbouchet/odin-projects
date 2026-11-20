@@ -4,6 +4,22 @@ import "core:fmt"
 import "core:math"
 import rl "vendor:raylib"
 
+Tile :: enum { Empty, Floor, Wall, Door }
+
+Level :: struct {
+    map_data: Map_Data,
+    layers: map[string]^Texture_Layer,
+
+    // Things that exist in this level
+    flames: [dynamic]Animation_To_Model,
+    coins:  [dynamic]Animation_To_Model,
+
+    // Could be generated from the map/entities when the level loads
+    walls_bb: [dynamic]rl.BoundingBox,
+    doors_bb: [dynamic]rl.BoundingBox,
+    coins_bb: [dynamic]rl.BoundingBox,
+}
+
 Game :: struct {
     view_width: i32,
     view_height: i32,
