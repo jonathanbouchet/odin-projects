@@ -96,12 +96,12 @@ main :: proc() {
     game := game_init()
     game_load(&game)
 
-    // ui_rect := rl.Rectangle{f32(view_width), 0, f32(WIDTH_UI), HEIGHT}
-    // hearts:= [3]rl.Texture{
-    //     rl.LoadTexture("assets/textures/Heart_Full_64.png"),
-    //     rl.LoadTexture("assets/textures/Heart_Half_64.png"),
-    //     rl.LoadTexture("assets/textures/Heart_Empty_64.png"),
-    // }
+    ui_rect := rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
+    hearts:= [3]rl.Texture{
+        rl.LoadTexture("assets/textures/Heart_Full_64.png"),
+        rl.LoadTexture("assets/textures/Heart_Half_64.png"),
+        rl.LoadTexture("assets/textures/Heart_Empty_64.png"),
+    }
 
     rl.DisableCursor() 
 
@@ -114,10 +114,9 @@ main :: proc() {
         // render
         rl.BeginTextureMode(game.view)
         rl.ClearBackground(BACKGROUND_BLACK)
+
         rl.BeginMode3D(game.camera)
-
         game_draw(game)
-
         rl.EndMode3D()
         rl.EndTextureMode()
 
@@ -128,7 +127,7 @@ main :: proc() {
         // draw_button(heart_button)
         game_draw_ui_container(game)
 
-        // draw_ui_panels(ui_rect, hearts)
+        draw_ui_panels(ui_rect, hearts)
         if game.debug{
             draw_debug(game)
         }

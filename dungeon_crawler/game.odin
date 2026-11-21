@@ -118,6 +118,8 @@ game_load :: proc(game: ^Game){
         is_colliding = false,
         HP = 100,
         coins_collected = 0,
+        cursor_enable = false,
+        mouse_delta_reset = false,
     }
 
     // add camera
@@ -180,110 +182,132 @@ game_update :: proc(game: ^Game) {
     - check for collisions(), in X and Z separately) of player with walls, doors
     - update camera according the player position
     */
+    if rl.IsKeyPressed(.P) {
+        game.player.cursor_enable = !game.player.cursor_enable
+        game.player.mouse_delta_reset = true
+
+        if game.player.cursor_enable {
+            rl.EnableCursor()
+        } else {
+            rl.DisableCursor()
+        }
+    }
+
     dt := rl.GetFrameTime()
-    move_speed := game.player.speed * dt
-
-    mouse_delta := rl.GetMouseDelta()
-    game.player.yaw -= mouse_delta.x * game.player.sensitivity
-    game.player.pitch -= mouse_delta.y * game.player.sensitivity
-
-    max_pitch: f32 = math.PI / 2.0 - 0.01
-    game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
-    // to lock the mouse vertical movement
-    // game.player.pitch = 0
-
-    forward := rl.Vector3{
-        math.sin(game.player.yaw),
-        0,
-        math.cos(game.player.yaw),
-    }
-    right := rl.Vector3{
-        math.cos(game.player.yaw),
-        0,
-        -math.sin(game.player.yaw),
-    }
-
-    // Combine input directions into one world-space movement vector.
-    move := rl.Vector3{}
-    if rl.IsKeyDown(.UP)    { move += forward }
-    if rl.IsKeyDown(.DOWN)  { move -= forward }
-    if rl.IsKeyDown(.LEFT)  { move += right }
-    if rl.IsKeyDown(.RIGHT) { move -= right }
-
-    // Prevent diagonal movement from being faster.
-    if rl.Vector3Length(move) > 0 {
-        move = rl.Vector3Normalize(move) * move_speed
-    }
-
-    game.player.is_colliding = false
-
-    // Move and resolve X first.
-    game.player.position.x += move.x
-    player_bb := player_bounding_box_adjusted(game.player)
-
-    for wall in game.walls_bb {
-        if rl.CheckCollisionBoxes(wall, player_bb) {
-            game.player.position.x -= move.x
-            game.player.is_colliding = true
-            break
+    if game.player.cursor_enable {
+        //TO DO : read mouse for UI interaction here
+    } else {
+        mouse_delta := rl.GetMouseDelta()
+        if game.player.mouse_delta_reset {
+            // Consume, but don't apply, the delta from the mode change.
+            game.player.mouse_delta_reset = false
+        } else {
+            game.player.yaw   -= mouse_delta.x * game.player.sensitivity
+            game.player.pitch -= mouse_delta.y * game.player.sensitivity
         }
-    }
 
-    // doors are only along X axis so we check only X for a door collision
-    for door in game.doors_bb {
-        if rl.CheckCollisionBoxes(door, player_bb) {
-            // game.player.position.x -= move.x
-            game.player.is_colliding = true
-            if rl.IsKeyPressed(.SPACE){
-                game_switch_level(game)
+        move_speed := game.player.speed * dt
+        game.player.yaw -= mouse_delta.x * game.player.sensitivity
+        game.player.pitch -= mouse_delta.y * game.player.sensitivity
+
+        max_pitch: f32 = math.PI / 2.0 - 0.01
+        game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
+        // to lock the mouse vertical movement
+        game.player.pitch = 0
+
+        forward := rl.Vector3{
+            math.sin(game.player.yaw),
+            0,
+            math.cos(game.player.yaw),
+        }
+        right := rl.Vector3{
+            math.cos(game.player.yaw),
+            0,
+            -math.sin(game.player.yaw),
+        }
+
+        // Combine input directions into one world-space movement vector.
+        move := rl.Vector3{}
+        if rl.IsKeyDown(.UP)    { move += forward }
+        if rl.IsKeyDown(.DOWN)  { move -= forward }
+        if rl.IsKeyDown(.LEFT)  { move += right }
+        if rl.IsKeyDown(.RIGHT) { move -= right }
+
+        // Prevent diagonal movement from being faster.
+        if rl.Vector3Length(move) > 0 {
+            move = rl.Vector3Normalize(move) * move_speed
+        }
+
+        game.player.is_colliding = false
+
+        // Move and resolve X first.
+        game.player.position.x += move.x
+        player_bb := player_bounding_box_adjusted(game.player)
+
+        for wall in game.walls_bb {
+            if rl.CheckCollisionBoxes(wall, player_bb) {
+                game.player.position.x -= move.x
+                game.player.is_colliding = true
+                break
             }
-            break
         }
-    }
 
-    // Then move and resolve Z, using the possibly updated X position.
-    game.player.position.z += move.z
-    player_bb = player_bounding_box_adjusted(game.player)
-    for wall in game.walls_bb {
-        if rl.CheckCollisionBoxes(wall, player_bb) {
-            game.player.position.z -= move.z
-            game.player.is_colliding = true
-            break
+        // doors are only along X axis so we check only X for a door collision
+        for door in game.doors_bb {
+            if rl.CheckCollisionBoxes(door, player_bb) {
+                // game.player.position.x -= move.x
+                game.player.is_colliding = true
+                if rl.IsKeyPressed(.SPACE){
+                    game_switch_level(game)
+                }
+                break
+            }
         }
-    }
-    
-    //testing
-    for coin, idx in game.coins_bb {
-        if rl.CheckCollisionBoxes(coin, player_bb) {
-            game.player.is_colliding = true
-            game.player.coins_collected += 1
-            // remove existing coin from list of bounding boxes
-            ordered_remove(&game.coins_bb, idx)
-            current_level := game.current_level_id
-            fmt.printfln("collision with coin: current level ID: %v", game.current_level_id)
-            game.num_coins_arr[current_level] -= 1
-            break
+
+        // Then move and resolve Z, using the possibly updated X position.
+        game.player.position.z += move.z
+        player_bb = player_bounding_box_adjusted(game.player)
+        for wall in game.walls_bb {
+            if rl.CheckCollisionBoxes(wall, player_bb) {
+                game.player.position.z -= move.z
+                game.player.is_colliding = true
+                break
+            }
         }
-    }
+        
+        //testing
+        for coin, idx in game.coins_bb {
+            if rl.CheckCollisionBoxes(coin, player_bb) {
+                game.player.is_colliding = true
+                game.player.coins_collected += 1
+                // remove existing coin from list of bounding boxes
+                ordered_remove(&game.coins_bb, idx)
+                current_level := game.current_level_id
+                fmt.printfln("collision with coin: current level ID: %v", game.current_level_id)
+                game.num_coins_arr[current_level] -= 1
+                break
+            }
+        }
 
-    game.camera.position = rl.Vector3{
-        game.player.position.x,
-        game.player.position.y + game.player.eyes,
-        game.player.position.z,
-    }
+        game.camera.position = rl.Vector3{
+            game.player.position.x,
+            game.player.position.y + game.player.eyes,
+            game.player.position.z,
+        }
 
-    direction := rl.Vector3{
-        math.cos(game.player.pitch) * math.sin(game.player.yaw),
-        math.sin(game.player.pitch),
-        math.cos(game.player.pitch) * math.cos(game.player.yaw),
+        direction := rl.Vector3{
+            math.cos(game.player.pitch) * math.sin(game.player.yaw),
+            math.sin(game.player.pitch),
+            math.cos(game.player.pitch) * math.cos(game.player.yaw),
+        }
+        game.camera.target = game.camera.position + direction
     }
-    game.camera.target = game.camera.position + direction
 }
 
 game_switch_level :: proc(game: ^Game){
     /*
     - switch between levels
-    - for now, only 2 levels so te switch is done by alternating btw both
+    - for now, only 2 levels so the switch is done by alternating btw both
     */
     fmt.printfln("before: current level id: %v", game.current_level_id)
     fmt.printfln("before: current level data: %v", game.current_level)

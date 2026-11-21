@@ -43,6 +43,8 @@ Player :: struct {
     is_colliding: bool,
     HP: i32,
     coins_collected: i32,
+    cursor_enable: bool,
+    mouse_delta_reset: bool, 
 }
 
 player_bounding_box :: proc(player: Player) -> rl.BoundingBox {
