@@ -14,6 +14,7 @@ TURN_SPEED :: 8.0 // Interpolation speed for rotation
 BACKGROUND :: rl.Color{20, 20, 20, 255}
 BACKGROUND_UI :: rl.Color{46, 34, 47, 255}
 OUTLINE_UI :: rl.Color{34, 22, 52, 255}
+CROSSHAIR :: rl.Color{57, 255, 20, 255}
 WIDTH :: 640
 HEIGHT :: 400
 WIDTH_UI :: 160
@@ -32,12 +33,18 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
 	return model
 }
 
+BUTTON_STATE :: enum{
+	ACTIVE,
+	PRESSED,
+}
+
 Button :: struct {
     position: rl.Vector2,
     textures: [2]rl.Texture2D,
     rotation: f32,
     scale: f32,
     state_changed: bool,
+	state: BUTTON_STATE,
 }
 
 button_rect :: proc(b: Button) -> rl.Rectangle {
@@ -52,6 +59,11 @@ update_button :: proc(b: ^Button) {
     // update mouse state if clicked
     if rl.CheckCollisionPointRec(rl.GetMousePosition(), button_rect(b^)) && rl.IsMouseButtonPressed(.LEFT) {
         b.state_changed = ! b.state_changed
+		if b.state == .ACTIVE{
+			b.state = .PRESSED
+		} else {
+			b.state = .ACTIVE
+		}
         fmt.printfln("current state: %v", b.state_changed)
     }
 }
@@ -114,6 +126,20 @@ is_walkable :: proc(x, z: int) -> bool {
 
 grid_to_world :: proc(grid_pos: [2]int, y: f32) -> rl.Vector3 {
 	return {f32(grid_pos.x) * TILE_SIZE, y, f32(grid_pos.y) * TILE_SIZE}
+}
+
+draw_debug :: proc(b: Button) {
+    /*
+    various "debug" utils:
+    - draw the FPS number
+    - draw lines, h and v, representing the mid-screen
+    */
+	button_str := strings.clone_to_cstring(fmt.tprintf("%v", b.state))
+    defer delete(button_str)
+    rl.DrawFPS(0, 0)
+	rl.DrawText(button_str, 0, 20, 20, CROSSHAIR)
+    rl.DrawLineV(rl.Vector2{0, HEIGHT_FULL/2}, {WIDTH, HEIGHT_FULL/2}, CROSSHAIR)
+    rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, CROSSHAIR)
 }
 
 main :: proc() {
@@ -201,6 +227,7 @@ main :: proc() {
 	textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
 	rotation = 0,
 	scale = 1.0,
+	state = .ACTIVE,
 	}
 
 	defer rl.UnloadModel(wall)
@@ -314,6 +341,7 @@ main :: proc() {
         )
 		rl.DrawRectangleLinesEx(ui_rect, 8, OUTLINE_UI)
 		draw_button(button)
+		draw_debug(button)
 		rl.EndDrawing()
 	}
 }
