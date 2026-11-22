@@ -12,8 +12,13 @@ TILE_SIZE :: 1.0
 MOVE_SPEED :: 8.0 // Interpolation speed for movement
 TURN_SPEED :: 8.0 // Interpolation speed for rotation
 BACKGROUND :: rl.Color{20, 20, 20, 255}
-WIDTH :: 600
+BACKGROUND_UI :: rl.Color{46, 34, 47, 255}
+OUTLINE_UI :: rl.Color{34, 22, 52, 255}
+WIDTH :: 640
 HEIGHT :: 400
+WIDTH_UI :: 160
+WIDTH_FULL :: 800
+HEIGHT_FULL:: 400
 
 load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     /*
@@ -25,6 +30,40 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     model := rl.LoadModelFromMesh(rl.GenMeshCube(dim.x, dim.y, dim.z)) // full cube
     model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
 	return model
+}
+
+Button :: struct {
+    position: rl.Vector2,
+    textures: [2]rl.Texture2D,
+    rotation: f32,
+    scale: f32,
+    state_changed: bool,
+}
+
+button_rect :: proc(b: Button) -> rl.Rectangle {
+    /* 
+    - return the Rectangle associated to that button
+    - used for check if mouse has clicked the button
+    */
+    return rl.Rectangle{b.position.x, b.position.y, f32(b.textures[0].width), f32(b.textures[0].height)}
+}
+
+update_button :: proc(b: ^Button) {
+    // update mouse state if clicked
+    if rl.CheckCollisionPointRec(rl.GetMousePosition(), button_rect(b^)) && rl.IsMouseButtonPressed(.LEFT) {
+        b.state_changed = ! b.state_changed
+        fmt.printfln("current state: %v", b.state_changed)
+    }
+}
+
+draw_button :: proc(b: Button) {
+    current_texture: rl.Texture
+    if b.state_changed {
+        current_texture = b.textures[1]
+    } else {
+        current_texture = b.textures[0]
+    }
+    rl.DrawTextureEx(current_texture, b.position, b.rotation, b.scale, rl.RAYWHITE)
 }
 
 // 1 = Wall, 0 = Floor
@@ -123,9 +162,12 @@ main :: proc() {
     }
 
 	rl.SetConfigFlags({.MSAA_4X_HINT, .VSYNC_HINT, .WINDOW_HIGHDPI})
-	rl.InitWindow(WIDTH, HEIGHT, "dungeon crwaler")
+	rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon crwaler")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
+
+	// game window
+	game_view := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
 
 	player := Player {
 		grid_pos   = {1, 1},
@@ -149,6 +191,18 @@ main :: proc() {
 	ceiling_2 := load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	ceiling_3 := load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 
+	button_texture := rl.LoadTexture("assets/Button_Blue.png")
+	defer rl.UnloadTexture(button_texture)
+	button_pressed_texture := rl.LoadTexture("assets/Button_Blue_Pressed.png")
+	defer rl.UnloadTexture(button_pressed_texture)
+
+	button := Button{
+	position = rl.Vector2{WIDTH + 10, 20},
+	textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
+	rotation = 0,
+	scale = 1.0,
+	}
+
 	defer rl.UnloadModel(wall)
 	defer rl.UnloadModel(floor)
 	defer rl.UnloadModel(ceiling_3)
@@ -159,6 +213,10 @@ main :: proc() {
 	defer rl.UnloadTexture(ceiling_3.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(ceiling_2.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(ceiling_1.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+
+	ui_rect := rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
+
+	// button
 
 	// rng number before the level is drawn
 	r32 := rand.float32() // f32 in [0, 1)
@@ -215,9 +273,12 @@ main :: proc() {
 		camera.position = player.visual_pos
 		camera.target = player.visual_pos + look_dir
 
-		// 5. Render
-		rl.BeginDrawing()
-		rl.ClearBackground(BACKGROUND)
+		// ui updates
+		update_button(&button)
+
+		// render game window
+        rl.BeginTextureMode(game_view)
+        rl.ClearBackground(BACKGROUND)
 
 		rl.BeginMode3D(camera)
 		for z in 0 ..< len(DUNGEON_MAP) {
@@ -240,6 +301,19 @@ main :: proc() {
 			}
 		}
 		rl.EndMode3D()
+		rl.EndTextureMode()
+
+		// render UI
+		rl.BeginDrawing()
+        rl.ClearBackground(BACKGROUND_UI)
+		rl.DrawTextureRec(
+            game_view.texture,
+            rl.Rectangle{0, 0, f32(WIDTH), -f32(HEIGHT)},
+            rl.Vector2{0, 0},
+            rl.WHITE,
+        )
+		rl.DrawRectangleLinesEx(ui_rect, 8, OUTLINE_UI)
+		draw_button(button)
 		rl.EndDrawing()
 	}
 }
