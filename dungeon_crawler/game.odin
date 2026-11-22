@@ -213,7 +213,7 @@ game_update :: proc(game: ^Game) {
         max_pitch: f32 = math.PI / 2.0 - 0.01
         game.player.pitch = clamp_f32(game.player.pitch, -max_pitch, max_pitch)
         // to lock the mouse vertical movement
-        game.player.pitch = 0
+        //game.player.pitch = 0
 
         forward := rl.Vector3{
             math.sin(game.player.yaw),
