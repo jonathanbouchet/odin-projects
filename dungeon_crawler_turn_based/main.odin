@@ -34,26 +34,31 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
 }
 
 // 1 = Wall, 0 = Floor
-DUNGEON_MAP := [8][8]int {
-	{1, 1, 1, 1, 1, 1, 1, 1},
-	{1, 0, 0, 0, 1, 0, 0, 1},
-	{1, 0, 1, 0, 1, 0, 1, 1},
-	{1, 0, 1, 0, 0, 0, 0, 1},
-	{1, 0, 1, 1, 1, 1, 0, 1},
-	{1, 0, 0, 0, 0, 0, 0, 1},
-	{1, 1, 1, 0, 1, 1, 1, 1},
-	{1, 1, 1, 1, 1, 1, 1, 1},
+
+DUNGEON_MAP: Dungeon_Map = {
+	[8][8]int {
+		{1, 1, 1, 1, 1, 1, 1, 1},
+		{1, 0, 0, 0, 1, 0, 0, 1},
+		{1, 0, 1, 0, 1, 0, 1, 1},
+		{1, 0, 1, 0, 0, 0, 0, 1},
+		{1, 0, 1, 1, 1, 1, 0, 1},
+		{1, 0, 0, 0, 0, 0, 0, 1},
+		{1, 1, 1, 0, 1, 1, 1, 1},
+		{1, 1, 1, 1, 1, 1, 1, 1},
+	},
 }
-// DUNGEON_MAP := [8][8]int {
-// 	{1, 1, 1, 1, 1, 1, 1, 1},
-// 	{1, 0, 0, 0, 0, 0, 0, 1},
-// 	{1, 0, 0, 0, 0, 0, 1, 1},
-// 	{1, 0, 0, 0, 0, 0, 1, 1},
-// 	{1, 0, 0, 0, 0, 0, 0, 1},
-// 	{1, 0, 0, 0, 0, 0, 0, 1},
-// 	{1, 0, 0, 0, 0, 0, 0, 1},
-// 	{1, 1, 1, 1, 1, 1, 1, 1},
-// }
+DUNGEON_MAP_2: Dungeon_Map = {
+	[8][8]int {
+		{1, 1, 1, 1, 1, 1, 1, 1},
+		{1, 0, 0, 0, 0, 0, 0, 1},
+		{1, 0, 0, 0, 0, 0, 1, 1},
+		{1, 0, 0, 0, 0, 0, 1, 1},
+		{1, 0, 0, 0, 0, 0, 0, 1},
+		{1, 0, 0, 0, 0, 0, 0, 1},
+		{1, 0, 0, 0, 0, 0, 0, 1},
+		{1, 1, 1, 1, 1, 1, 1, 1},
+	},
+}
 
 // Cardinal directions: 0 = North (-Z), 1 = East (+X), 2 = South (+Z), 3 = West (-X)
 DIR_VECTORS := [4][2]int {
@@ -72,27 +77,30 @@ Player :: struct {
 	eye_height:  f32,
 }
 
-is_walkable :: proc(x, z: int) -> bool {
-	if z < 0 || z >= len(DUNGEON_MAP) || x < 0 || x >= len(DUNGEON_MAP[0]) {
+is_walkable :: proc(game: Game, x, z: int) -> bool {
+	if z < 0 || z >= len(game.current_map.data) || x < 0 || x >= len(game.current_map.data[0]) {
 		return false
 	}
-	return DUNGEON_MAP[z][x] == 0
+	return game.current_map.data[z][x] == 0
 }
 
 grid_to_world :: proc(grid_pos: [2]int, y: f32) -> rl.Vector3 {
 	return {f32(grid_pos.x) * TILE_SIZE, y, f32(grid_pos.y) * TILE_SIZE}
 }
 
-draw_debug :: proc(b: Button) {
+draw_debug :: proc(game: Game, b: Button) {
     /*
     various "debug" utils:
     - draw the FPS number
     - draw lines, h and v, representing the mid-screen
     */
-	button_str := strings.clone_to_cstring(fmt.tprintf("%v", b.state))
+	button_str := strings.clone_to_cstring(fmt.tprintf("BUTTON: %v", b.state))
     defer delete(button_str)
+	current_map_str := strings.clone_to_cstring(fmt.tprintf("MAP: %v", game.current_map_id))
+    defer delete(current_map_str)
     rl.DrawFPS(0, 0)
-	rl.DrawText(button_str, 0, 20, 20, CROSSHAIR)
+	rl.DrawText(current_map_str, 0, 20, 20, CROSSHAIR)
+	rl.DrawText(button_str, 0, 40, 20, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{0, HEIGHT_FULL/2}, {WIDTH, HEIGHT_FULL/2}, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, CROSSHAIR)
 }
@@ -146,6 +154,13 @@ main :: proc() {
 	rl.InitWindow(WIDTH_FULL, HEIGHT_FULL, "dungeon crwaler")
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
+
+	game:= Game{
+		maps = [2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
+		debug = true,
+	}
+	game.current_map = game.maps[0]
+	game.current_map_id = 0
 
 	// game window
 	game_view := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
@@ -237,7 +252,7 @@ main :: proc() {
 		if move_dir != {0, 0} {
 			next_x := player.grid_pos.x + move_dir.x
 			next_z := player.grid_pos.y + move_dir.y
-			if is_walkable(next_x, next_z) {
+			if is_walkable(game, next_x, next_z) {
 				player.grid_pos = {next_x, next_z}
 			}
 		}
@@ -265,11 +280,11 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND)
 
 		rl.BeginMode3D(camera)
-		for z in 0 ..< len(DUNGEON_MAP) {
-			for x in 0 ..< len(DUNGEON_MAP[0]) {
+		for z in 0 ..< len(game.current_map.data) {
+			for x in 0 ..< len(game.current_map.data[0]) {
 				world_pos := grid_to_world({x, z}, 0)
 				world_pos_ceiling := grid_to_world({x, z}, 1)
-				if DUNGEON_MAP[z][x] == 1 {
+				if game.current_map.data[z][x] == 1 {
 					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(wall, wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 					rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
@@ -299,7 +314,9 @@ main :: proc() {
         )
 		rl.DrawRectangleLinesEx(ui_rect, 4, OUTLINE_UI)
 		draw_button(button)
-		draw_debug(button)
+		if game.debug {
+			draw_debug(game, button)
+		}
 		rl.EndDrawing()
 	}
 }
