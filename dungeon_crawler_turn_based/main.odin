@@ -13,7 +13,7 @@ MOVE_SPEED :: 8.0 // Interpolation speed for movement
 TURN_SPEED :: 8.0 // Interpolation speed for rotation
 BACKGROUND :: rl.Color{20, 20, 20, 255}
 BACKGROUND_UI :: rl.Color{46, 34, 47, 255}
-OUTLINE_UI :: rl.Color{34, 22, 52, 255}
+OUTLINE_UI :: rl.Color{0, 0, 0, 100}
 CROSSHAIR :: rl.Color{57, 255, 20, 255}
 WIDTH :: 640
 HEIGHT :: 400
@@ -31,51 +31,6 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     model := rl.LoadModelFromMesh(rl.GenMeshCube(dim.x, dim.y, dim.z)) // full cube
     model.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture = texture
 	return model
-}
-
-BUTTON_STATE :: enum{
-	ACTIVE,
-	PRESSED,
-}
-
-Button :: struct {
-    position: rl.Vector2,
-    textures: [2]rl.Texture2D,
-    rotation: f32,
-    scale: f32,
-    state_changed: bool,
-	state: BUTTON_STATE,
-}
-
-button_rect :: proc(b: Button) -> rl.Rectangle {
-    /* 
-    - return the Rectangle associated to that button
-    - used for check if mouse has clicked the button
-    */
-    return rl.Rectangle{b.position.x, b.position.y, f32(b.textures[0].width), f32(b.textures[0].height)}
-}
-
-update_button :: proc(b: ^Button) {
-    // update mouse state if clicked
-    if rl.CheckCollisionPointRec(rl.GetMousePosition(), button_rect(b^)) && rl.IsMouseButtonPressed(.LEFT) {
-        b.state_changed = ! b.state_changed
-		if b.state == .ACTIVE{
-			b.state = .PRESSED
-		} else {
-			b.state = .ACTIVE
-		}
-        fmt.printfln("current state: %v", b.state_changed)
-    }
-}
-
-draw_button :: proc(b: Button) {
-    current_texture: rl.Texture
-    if b.state_changed {
-        current_texture = b.textures[1]
-    } else {
-        current_texture = b.textures[0]
-    }
-    rl.DrawTextureEx(current_texture, b.position, b.rotation, b.scale, rl.RAYWHITE)
 }
 
 // 1 = Wall, 0 = Floor
@@ -269,11 +224,13 @@ main :: proc() {
 		if rl.IsKeyPressed(.W) || rl.IsKeyPressed(.UP) {
 			move_dir = fwd
 		} else if rl.IsKeyPressed(.S) || rl.IsKeyPressed(.DOWN) {
-			move_dir = {-fwd.x, -fwd.y}
+			move_dir = -fwd
+			// move_dir = {-fwd.x, -fwd.y}
 		} else if rl.IsKeyPressed(.D) {
 			move_dir = right
 		} else if rl.IsKeyPressed(.A) {
-			move_dir = {-right.x, -right.y}
+			move_dir = -right
+			// move_dir = {-right.x, -right.y}
 		}
 
 		// Apply move if destination tile is clear
@@ -315,6 +272,7 @@ main :: proc() {
 				if DUNGEON_MAP[z][x] == 1 {
 					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(wall, wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
+					rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
 				} else {
 					if r32 < 0.33{
 						rl.DrawModelEx(ceiling_1, world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
@@ -339,7 +297,7 @@ main :: proc() {
             rl.Vector2{0, 0},
             rl.WHITE,
         )
-		rl.DrawRectangleLinesEx(ui_rect, 8, OUTLINE_UI)
+		rl.DrawRectangleLinesEx(ui_rect, 4, OUTLINE_UI)
 		draw_button(button)
 		draw_debug(button)
 		rl.EndDrawing()
