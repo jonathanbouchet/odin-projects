@@ -9,6 +9,8 @@ import "core:math/linalg"
 import rl "vendor:raylib"
 
 TILE_SIZE :: 1.0
+MAP_W :: 8
+MAP_H :: 8
 MOVE_SPEED :: 8.0 // Interpolation speed for movement
 TURN_SPEED :: 8.0 // Interpolation speed for rotation
 BACKGROUND :: rl.Color{20, 20, 20, 255}
@@ -36,7 +38,7 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
 // 1 = Wall, 0 = Floor
 
 DUNGEON_MAP: Dungeon_Map = {
-	[8][8]int {
+	[MAP_W][MAP_H]int {
 		{1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 0, 0, 0, 1, 0, 0, 1},
 		{1, 0, 1, 0, 1, 0, 1, 1},
@@ -48,7 +50,7 @@ DUNGEON_MAP: Dungeon_Map = {
 	},
 }
 DUNGEON_MAP_2: Dungeon_Map = {
-	[8][8]int {
+	[MAP_W][MAP_H]int {
 		{1, 1, 1, 1, 1, 1, 1, 1},
 		{1, 0, 0, 0, 0, 0, 0, 1},
 		{1, 0, 0, 0, 0, 0, 1, 1},
@@ -163,29 +165,31 @@ main :: proc() {
 	game.current_map_id = 0
 
 	// game window
-	game_view := rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
+	game.view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
 
-	player := Player {
+	p := Player {
 		grid_pos   = {1, 1},
 		facing     = 1, // Facing East
 		eye_height = TILE_SIZE / 2,
 	}
-	player.visual_pos = grid_to_world(player.grid_pos, player.eye_height)
-	player.target_yaw = f32(player.facing) * (math.PI / 2.0)
-	player.visual_yaw = player.target_yaw
+	p.visual_pos = grid_to_world(p.grid_pos, p.eye_height)
+	p.target_yaw = f32(p.facing) * (math.PI / 2.0)
+	p.visual_yaw = p.target_yaw
+
+	game.player = p
 
 	camera := rl.Camera3D {
-		position   = player.visual_pos,
+		position   = game.player.visual_pos,
 		up         = {0, 1, 0},
 		fovy       = 60.0,
 		projection = .PERSPECTIVE,
 	}
 
-	wall := load_and_make_model("assets/wall_64x64.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
-    floor := load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	ceiling_1 := load_and_make_model("assets/ceiling_64x64-1.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	ceiling_2 := load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	ceiling_3 := load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["wall"] = load_and_make_model("assets/wall_64x64.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
+	game.models["floor"] = load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64-1.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["ceiling_2"] = load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["ceiling_3"] = load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 
 	button_texture := rl.LoadTexture("assets/Button_Blue.png")
 	defer rl.UnloadTexture(button_texture)
@@ -200,18 +204,19 @@ main :: proc() {
 	state = .ACTIVE,
 	}
 
-	defer rl.UnloadModel(wall)
-	defer rl.UnloadModel(floor)
-	defer rl.UnloadModel(ceiling_3)
-	defer rl.UnloadModel(ceiling_2)
-	defer rl.UnloadModel(ceiling_1)
-	defer rl.UnloadTexture(wall.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(floor.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(ceiling_3.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(ceiling_2.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(ceiling_1.materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer delete(game.models)
+	defer rl.UnloadModel(game.models["wall"])
+	defer rl.UnloadModel(game.models["floor"])
+	defer rl.UnloadModel(game.models["ceiling_1"])
+	defer rl.UnloadModel(game.models["ceiling_2"])
+	defer rl.UnloadModel(game.models["ceiling_3"])
+	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["ceiling_2"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["ceiling_3"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 
-	ui_rect := rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
+	game.ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
 
 	// button
 
@@ -223,60 +228,58 @@ main :: proc() {
 
 		// 1. Handle Turn Input (90-degree increments)
 		if rl.IsKeyPressed(.Q) || rl.IsKeyPressed(.LEFT) {
-			player.facing = (player.facing + 3) % 4 // Wrap -1 to 3
-			player.target_yaw -= math.PI / 2.0
+			game.player.facing = (game.player.facing + 3) % 4 // Wrap -1 to 3
+			game.player.target_yaw -= math.PI / 2.0
 		}
 		if rl.IsKeyPressed(.E) || rl.IsKeyPressed(.RIGHT) {
-			player.facing = (player.facing + 1) % 4
-			player.target_yaw += math.PI / 2.0
+			game.player.facing = (game.player.facing + 1) % 4
+			game.player.target_yaw += math.PI / 2.0
 		}
 
 		// 2. Handle Grid Movement Input
 		move_dir := [2]int{0, 0}
-		fwd := DIR_VECTORS[player.facing]
-		right := DIR_VECTORS[(player.facing + 1) % 4]
+		fwd := DIR_VECTORS[game.player.facing]
+		right := DIR_VECTORS[(game.player.facing + 1) % 4]
 
 		if rl.IsKeyPressed(.W) || rl.IsKeyPressed(.UP) {
 			move_dir = fwd
 		} else if rl.IsKeyPressed(.S) || rl.IsKeyPressed(.DOWN) {
 			move_dir = -fwd
-			// move_dir = {-fwd.x, -fwd.y}
 		} else if rl.IsKeyPressed(.D) {
 			move_dir = right
 		} else if rl.IsKeyPressed(.A) {
 			move_dir = -right
-			// move_dir = {-right.x, -right.y}
 		}
 
 		// Apply move if destination tile is clear
 		if move_dir != {0, 0} {
-			next_x := player.grid_pos.x + move_dir.x
-			next_z := player.grid_pos.y + move_dir.y
+			next_x := game.player.grid_pos.x + move_dir.x
+			next_z := game.player.grid_pos.y + move_dir.y
 			if is_walkable(game, next_x, next_z) {
-				player.grid_pos = {next_x, next_z}
+				game.player.grid_pos = {next_x, next_z}
 			}
 		}
 
 		// 3. Smoothly Interpolate Visuals to Match Logical Grid State
-		target_world_pos := grid_to_world(player.grid_pos, player.eye_height)
-		player.visual_pos = linalg.lerp(player.visual_pos, target_world_pos, 1.0 - math.exp(-MOVE_SPEED * dt))
-		player.visual_yaw = math.lerp(player.visual_yaw, player.target_yaw, 1.0 - math.exp(-TURN_SPEED * dt))
+		target_world_pos := grid_to_world(game.player.grid_pos, game.player.eye_height)
+		game.player.visual_pos = linalg.lerp(game.player.visual_pos, target_world_pos, 1.0 - math.exp(-MOVE_SPEED * dt))
+		game.player.visual_yaw = math.lerp(game.player.visual_yaw, game.player.target_yaw, 1.0 - math.exp(-TURN_SPEED * dt))
 
 		// 4. Update Raylib Camera3D
 		// Facing 0 (North) corresponds to -Z, Facing 1 (East) to +X
 		look_dir := rl.Vector3 {
-			math.sin(player.visual_yaw),
+			math.sin(game.player.visual_yaw),
 			0,
-			-math.cos(player.visual_yaw),
+			-math.cos(game.player.visual_yaw),
 		}
-		camera.position = player.visual_pos
-		camera.target = player.visual_pos + look_dir
+		camera.position = game.player.visual_pos
+		camera.target = game.player.visual_pos + look_dir
 
 		// ui updates
 		update_button(&button)
 
 		// render game window
-        rl.BeginTextureMode(game_view)
+        rl.BeginTextureMode(game.view)
         rl.ClearBackground(BACKGROUND)
 
 		rl.BeginMode3D(camera)
@@ -286,17 +289,17 @@ main :: proc() {
 				world_pos_ceiling := grid_to_world({x, z}, 1)
 				if game.current_map.data[z][x] == 1 {
 					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
-					rl.DrawModelEx(wall, wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
+					rl.DrawModelEx(game.models["wall"], wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 					rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
 				} else {
 					if r32 < 0.33{
-						rl.DrawModelEx(ceiling_1, world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+						rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 					} else if r32 < 0.66{
-						rl.DrawModelEx(ceiling_2, world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+						rl.DrawModelEx(game.models["ceiling_2"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 					} else {
-						rl.DrawModelEx(ceiling_3, world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+						rl.DrawModelEx(game.models["ceiling_3"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 					}
-					rl.DrawModelEx(floor, world_pos, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+					rl.DrawModelEx(game.models["floor"], world_pos, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 				}
 			}
 		}
@@ -307,12 +310,12 @@ main :: proc() {
 		rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND_UI)
 		rl.DrawTextureRec(
-            game_view.texture,
+            game.view.texture,
             rl.Rectangle{0, 0, f32(WIDTH), -f32(HEIGHT)},
             rl.Vector2{0, 0},
             rl.WHITE,
         )
-		rl.DrawRectangleLinesEx(ui_rect, 4, OUTLINE_UI)
+		rl.DrawRectangleLinesEx(game.ui_container, 4, OUTLINE_UI)
 		draw_button(button)
 		if game.debug {
 			draw_debug(game, button)
