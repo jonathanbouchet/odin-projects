@@ -70,15 +70,6 @@ DIR_VECTORS := [4][2]int {
 	{-1, 0}, // West
 }
 
-Player :: struct {
-	grid_pos:    [2]int,
-	facing:      int, // 0..3
-	visual_pos:  rl.Vector3,
-	visual_yaw:  f32,
-	target_yaw:  f32,
-	eye_height:  f32,
-}
-
 is_walkable :: proc(game: Game, x, z: int) -> bool {
 	if z < 0 || z >= len(game.current_map.data) || x < 0 || x >= len(game.current_map.data[0]) {
 		return false
@@ -157,16 +148,6 @@ main :: proc() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
-	game:= Game{
-		maps = [2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
-		debug = true,
-	}
-	game.current_map = game.maps[0]
-	game.current_map_id = 0
-
-	// game window
-	game.view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT))
-
 	p := Player {
 		grid_pos   = {1, 1},
 		facing     = 1, // Facing East
@@ -176,7 +157,15 @@ main :: proc() {
 	p.target_yaw = f32(p.facing) * (math.PI / 2.0)
 	p.visual_yaw = p.target_yaw
 
-	game.player = p
+	game:= Game{
+		maps = [2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
+		debug = true,
+		tile_debug = false,
+		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
+		player = p,
+	}
+	game.current_map = game.maps[0]
+	game.current_map_id = 0
 
 	camera := rl.Camera3D {
 		position   = game.player.visual_pos,
@@ -290,7 +279,9 @@ main :: proc() {
 				if game.current_map.data[z][x] == 1 {
 					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(game.models["wall"], wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
-					rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
+					if game.tile_debug{
+						rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
+					}
 				} else {
 					if r32 < 0.33{
 						rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
