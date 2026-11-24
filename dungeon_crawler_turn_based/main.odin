@@ -35,11 +35,11 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
 	return model
 }
 
-// 1 = Wall, 0 = Floor
+// 1 = Wall, 0 = Floor, 2 = Door
 
 DUNGEON_MAP: Dungeon_Map = {
 	[MAP_W][MAP_H]int {
-		{1, 1, 1, 1, 1, 1, 1, 1},
+		{1, 2, 1, 1, 1, 1, 1, 1},
 		{1, 0, 0, 0, 1, 0, 0, 1},
 		{1, 0, 1, 0, 1, 0, 1, 1},
 		{1, 0, 1, 0, 0, 0, 0, 1},
@@ -51,7 +51,7 @@ DUNGEON_MAP: Dungeon_Map = {
 }
 DUNGEON_MAP_2: Dungeon_Map = {
 	[MAP_W][MAP_H]int {
-		{1, 1, 1, 1, 1, 1, 1, 1},
+		{1, 1, 1, 2, 1, 1, 1, 1},
 		{1, 0, 0, 0, 0, 0, 0, 1},
 		{1, 0, 0, 0, 0, 0, 1, 1},
 		{1, 0, 0, 0, 0, 0, 1, 1},
@@ -164,8 +164,8 @@ main :: proc() {
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
 	}
-	game.current_map = game.maps[0]
-	game.current_map_id = 0
+	game.current_map = game.maps[1]
+	game.current_map_id = 1
 
 	camera := rl.Camera3D {
 		position   = game.player.visual_pos,
@@ -174,11 +174,12 @@ main :: proc() {
 		projection = .PERSPECTIVE,
 	}
 
-	game.models["wall"] = load_and_make_model("assets/wall_64x64.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
+	game.models["wall"] = load_and_make_model("assets/wall_64x64_door-1.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 	game.models["floor"] = load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64-1.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["ceiling_2"] = load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["ceiling_3"] = load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["door"] = load_and_make_model("assets/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 
 	button_texture := rl.LoadTexture("assets/Button_Blue.png")
 	defer rl.UnloadTexture(button_texture)
@@ -186,11 +187,11 @@ main :: proc() {
 	defer rl.UnloadTexture(button_pressed_texture)
 
 	button := Button{
-	position = rl.Vector2{WIDTH + 10, 20},
-	textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
-	rotation = 0,
-	scale = 1.0,
-	state = .ACTIVE,
+		position = rl.Vector2{WIDTH + 10, 20},
+		textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
+		rotation = 0,
+		scale = 1.0,
+		state = .ACTIVE,
 	}
 
 	defer delete(game.models)
@@ -282,6 +283,9 @@ main :: proc() {
 					if game.tile_debug{
 						rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
 					}
+				} else if game.current_map.data[z][x] == 2 {
+					door_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
+					rl.DrawModelEx(game.models["door"], door_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 				} else {
 					if r32 < 0.33{
 						rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
