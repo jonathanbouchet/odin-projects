@@ -23,6 +23,34 @@ WIDTH_UI :: 160
 WIDTH_FULL :: 800
 HEIGHT_FULL:: 400
 
+update_shader_values :: proc(
+    light_direction: ^[3]f32, 
+    light_color: ^[3]f32, 
+    ambient_color: ^[3]f32,
+    light_direction_loc: int, 
+    light_color_loc: int, 
+    ambient_color_loc: int,
+    shader: rl.Shader) {
+    rl.SetShaderValue(
+        shader,
+        light_direction_loc,
+        light_direction,
+        rl.ShaderUniformDataType.VEC3,
+    )
+    rl.SetShaderValue(
+        shader,
+        light_color_loc,
+        light_color,
+        rl.ShaderUniformDataType.VEC3,
+    )
+    rl.SetShaderValue(
+        shader,
+        ambient_color_loc,
+        ambient_color,
+        rl.ShaderUniformDataType.VEC3,
+    )
+}
+
 load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     /*
     - load a static texture and aaply it to a Model
@@ -77,6 +105,10 @@ is_walkable :: proc(game: Game, x, z: int) -> bool {
 	return game.current_map.data[z][x] == 0
 }
 
+get_tile_id :: proc(game: Game, x, z: int) -> i32 {
+	return i32(game.current_map.data[z][x])
+}
+
 grid_to_world :: proc(grid_pos: [2]int, y: f32) -> rl.Vector3 {
 	return {f32(grid_pos.x) * TILE_SIZE, y, f32(grid_pos.y) * TILE_SIZE}
 }
@@ -91,9 +123,12 @@ draw_debug :: proc(game: Game, b: Button) {
     defer delete(button_str)
 	current_map_str := strings.clone_to_cstring(fmt.tprintf("MAP: %v", game.current_map_id))
     defer delete(current_map_str)
+	player_pos_str := strings.clone_to_cstring(fmt.tprintf("[%v, %v], NEXT TILE ID %v", game.player.grid_pos[0], game.player.grid_pos[1], game.player.next_tile))
+    defer delete(player_pos_str)
     rl.DrawFPS(0, 0)
 	rl.DrawText(current_map_str, 0, 20, 20, CROSSHAIR)
-	rl.DrawText(button_str, 0, 40, 20, CROSSHAIR)
+	rl.DrawText(player_pos_str, 0, 40, 20, CROSSHAIR)
+	rl.DrawText(button_str, 0, 60, 20, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{0, HEIGHT_FULL/2}, {WIDTH, HEIGHT_FULL/2}, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, CROSSHAIR)
 }
@@ -176,10 +211,47 @@ main :: proc() {
 
 	game.models["wall"] = load_and_make_model("assets/wall_64x64_door-1.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 	game.models["floor"] = load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64-1.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	game.models["ceiling_2"] = load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	game.models["ceiling_3"] = load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64_transparent.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	// game.models["ceiling_2"] = load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	// game.models["ceiling_3"] = load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["door"] = load_and_make_model("assets/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
+
+	shader := rl.LoadShader("shaders/basic.vs", "shaders/basic.fs")
+    for i in 0..<int(game.models["wall"].materialCount){
+        game.models["wall"].materials[i].shader = shader
+    }
+	for i in 0..<int(game.models["floor"].materialCount){
+        game.models["floor"].materials[i].shader = shader
+    }
+	for i in 0..<int(game.models["ceiling_1"].materialCount){
+        game.models["ceiling_1"].materials[i].shader = shader
+    }
+	// for i in 0..<int(game.models["ceiling_2"].materialCount){
+    //     game.models["ceiling_2"].materials[i].shader = shader
+    // }
+	// for i in 0..<int(game.models["ceiling_3"].materialCount){
+    //     game.models["ceiling_3"].materials[i].shader = shader
+    // }
+	for i in 0..<int(game.models["door"].materialCount){
+        game.models["door"].materials[i].shader = shader
+    }
+	defer rl.UnloadShader(shader)
+
+	// light_direction := rl.Vector3{-1.0, -1.0, -1.0}
+	light_direction := rl.Vector3{5.0, 0.5, 5.0}
+    // light_color := rl.Vector3{0.7, 0.7, 0.7}
+    // ambient_color := rl.Vector3{0.25, 0.25, 0.25}
+	light_color := rl.Vector3{1.0, 1.0, 1.0}
+    ambient_color := rl.Vector3{1.0, 1.0, 1.0}
+
+    light_direction_loc := rl.GetShaderLocation(shader, "lightDirection")
+    light_color_loc := rl.GetShaderLocation(shader, "lightColor")
+    ambient_color_loc := rl.GetShaderLocation(shader, "ambientColor")
+
+    update_shader_values(
+        &light_direction, &light_color, &ambient_color,
+        int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+        shader)
 
 	button_texture := rl.LoadTexture("assets/Button_Blue.png")
 	defer rl.UnloadTexture(button_texture)
@@ -198,13 +270,13 @@ main :: proc() {
 	defer rl.UnloadModel(game.models["wall"])
 	defer rl.UnloadModel(game.models["floor"])
 	defer rl.UnloadModel(game.models["ceiling_1"])
-	defer rl.UnloadModel(game.models["ceiling_2"])
-	defer rl.UnloadModel(game.models["ceiling_3"])
+	// defer rl.UnloadModel(game.models["ceiling_2"])
+	// defer rl.UnloadModel(game.models["ceiling_3"])
 	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(game.models["ceiling_2"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(game.models["ceiling_3"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	// defer rl.UnloadTexture(game.models["ceiling_2"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	// defer rl.UnloadTexture(game.models["ceiling_3"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 
 	game.ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
 
@@ -248,7 +320,10 @@ main :: proc() {
 			if is_walkable(game, next_x, next_z) {
 				game.player.grid_pos = {next_x, next_z}
 			}
+			// get next tile_id
+			game.player.next_tile = get_tile_id(game, next_x, next_z)
 		}
+
 
 		// 3. Smoothly Interpolate Visuals to Match Logical Grid State
 		target_world_pos := grid_to_world(game.player.grid_pos, game.player.eye_height)
@@ -267,6 +342,12 @@ main :: proc() {
 
 		// ui updates
 		update_button(&button)
+
+		// shaders update
+		update_shader_values(
+            &light_direction, &light_color, &ambient_color,
+            int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+            shader)
 
 		// render game window
         rl.BeginTextureMode(game.view)
@@ -287,13 +368,13 @@ main :: proc() {
 					door_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(game.models["door"], door_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 				} else {
-					if r32 < 0.33{
+					if r32 < 1.0{
 						rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					} else if r32 < 0.66{
-						rl.DrawModelEx(game.models["ceiling_2"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					} else {
-						rl.DrawModelEx(game.models["ceiling_3"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					}
+					} //else if r32 < 0.66{
+					// 	rl.DrawModelEx(game.models["ceiling_2"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+					// } else {
+					// 	rl.DrawModelEx(game.models["ceiling_3"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
+					// }
 					rl.DrawModelEx(game.models["floor"], world_pos, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 				}
 			}

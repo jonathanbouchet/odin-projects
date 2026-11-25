@@ -9,4 +9,5 @@ Player :: struct {
 	visual_yaw:  f32,
 	target_yaw:  f32,
 	eye_height:  f32,
+	next_tile: i32,
 }
