@@ -15,5 +15,12 @@ Game :: struct {
     view: rl.RenderTexture2D, // 'playable' view dimension with respect the all game window
     ui_container: rl.Rectangle, // dimnesion of the UI view
     player: Player, // player
-    models: map[string]rl.Model, // models used by tiles
+    models: map[string]rl.Model, // models used by tiles,
+    shader: rl.Shader,
+    light_direction_loc: i32,
+    light_color_loc: i32,
+    ambient_color_loc: i32,
+    light_direction: [3]f32,
+    light_color: [3]f32,
+    ambient_color: [3]f32,
 }

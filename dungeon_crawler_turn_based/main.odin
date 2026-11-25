@@ -4,7 +4,6 @@ import "core:mem"
 import "core:fmt"
 import "core:strings"
 import "core:math"
-import "core:math/rand"
 import "core:math/linalg"
 import rl "vendor:raylib"
 
@@ -22,34 +21,6 @@ HEIGHT :: 400
 WIDTH_UI :: 160
 WIDTH_FULL :: 800
 HEIGHT_FULL:: 400
-
-update_shader_values :: proc(
-    light_direction: ^[3]f32, 
-    light_color: ^[3]f32, 
-    ambient_color: ^[3]f32,
-    light_direction_loc: int, 
-    light_color_loc: int, 
-    ambient_color_loc: int,
-    shader: rl.Shader) {
-    rl.SetShaderValue(
-        shader,
-        light_direction_loc,
-        light_direction,
-        rl.ShaderUniformDataType.VEC3,
-    )
-    rl.SetShaderValue(
-        shader,
-        light_color_loc,
-        light_color,
-        rl.ShaderUniformDataType.VEC3,
-    )
-    rl.SetShaderValue(
-        shader,
-        ambient_color_loc,
-        ambient_color,
-        rl.ShaderUniformDataType.VEC3,
-    )
-}
 
 load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
     /*
@@ -198,6 +169,7 @@ main :: proc() {
 		tile_debug = false,
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
+		shader = rl.LoadShader("shaders/basic.vs", "shaders/basic.fs"),
 	}
 	game.current_map = game.maps[1]
 	game.current_map_id = 1
@@ -212,46 +184,20 @@ main :: proc() {
 	game.models["wall"] = load_and_make_model("assets/wall_64x64_door-1.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 	game.models["floor"] = load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64_transparent.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	// game.models["ceiling_2"] = load_and_make_model("assets/ceiling_64x64-2.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	// game.models["ceiling_3"] = load_and_make_model("assets/ceiling_64x64-3.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
 	game.models["door"] = load_and_make_model("assets/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 
-	shader := rl.LoadShader("shaders/basic.vs", "shaders/basic.fs")
-    for i in 0..<int(game.models["wall"].materialCount){
-        game.models["wall"].materials[i].shader = shader
-    }
-	for i in 0..<int(game.models["floor"].materialCount){
-        game.models["floor"].materials[i].shader = shader
-    }
-	for i in 0..<int(game.models["ceiling_1"].materialCount){
-        game.models["ceiling_1"].materials[i].shader = shader
-    }
-	// for i in 0..<int(game.models["ceiling_2"].materialCount){
-    //     game.models["ceiling_2"].materials[i].shader = shader
-    // }
-	// for i in 0..<int(game.models["ceiling_3"].materialCount){
-    //     game.models["ceiling_3"].materials[i].shader = shader
-    // }
-	for i in 0..<int(game.models["door"].materialCount){
-        game.models["door"].materials[i].shader = shader
-    }
-	defer rl.UnloadShader(shader)
+	add_shader_to_model(&game)
 
-	// light_direction := rl.Vector3{-1.0, -1.0, -1.0}
-	light_direction := rl.Vector3{5.0, 0.5, 5.0}
-    // light_color := rl.Vector3{0.7, 0.7, 0.7}
-    // ambient_color := rl.Vector3{0.25, 0.25, 0.25}
-	light_color := rl.Vector3{1.0, 1.0, 1.0}
-    ambient_color := rl.Vector3{1.0, 1.0, 1.0}
+	game.light_direction = {-1.0, -1.0, -1.0}
+	// light_direction := game.player.visual_pos
+	game.light_color = {1.0, 1.0, 1.0}
+    game.ambient_color = {1.0, 1.0, 1.0}
 
-    light_direction_loc := rl.GetShaderLocation(shader, "lightDirection")
-    light_color_loc := rl.GetShaderLocation(shader, "lightColor")
-    ambient_color_loc := rl.GetShaderLocation(shader, "ambientColor")
+    game.light_direction_loc = rl.GetShaderLocation(game.shader, "lightDirection")
+    game.light_color_loc = rl.GetShaderLocation(game.shader, "lightColor")
+    game.ambient_color_loc = rl.GetShaderLocation(game.shader, "ambientColor")
 
-    update_shader_values(
-        &light_direction, &light_color, &ambient_color,
-        int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
-        shader)
+	update_shader_values(&game)
 
 	button_texture := rl.LoadTexture("assets/Button_Blue.png")
 	defer rl.UnloadTexture(button_texture)
@@ -267,23 +213,14 @@ main :: proc() {
 	}
 
 	defer delete(game.models)
+	defer rl.UnloadShader(game.shader)
 	defer rl.UnloadModel(game.models["wall"])
 	defer rl.UnloadModel(game.models["floor"])
 	defer rl.UnloadModel(game.models["ceiling_1"])
-	// defer rl.UnloadModel(game.models["ceiling_2"])
-	// defer rl.UnloadModel(game.models["ceiling_3"])
 	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	// defer rl.UnloadTexture(game.models["ceiling_2"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	// defer rl.UnloadTexture(game.models["ceiling_3"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-
 	game.ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
-
-	// button
-
-	// rng number before the level is drawn
-	r32 := rand.float32() // f32 in [0, 1)
 
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
@@ -344,10 +281,11 @@ main :: proc() {
 		update_button(&button)
 
 		// shaders update
-		update_shader_values(
-            &light_direction, &light_color, &ambient_color,
-            int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
-            shader)
+		// light_direction = game.player.visual_pos
+		// update_shader_values(
+        //     &light_direction, &light_color, &ambient_color,
+        //     int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+        //     shader)
 
 		// render game window
         rl.BeginTextureMode(game.view)
@@ -368,13 +306,7 @@ main :: proc() {
 					door_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(game.models["door"], door_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 				} else {
-					if r32 < 1.0{
-						rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					} //else if r32 < 0.66{
-					// 	rl.DrawModelEx(game.models["ceiling_2"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					// } else {
-					// 	rl.DrawModelEx(game.models["ceiling_3"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					// }
+					rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 					rl.DrawModelEx(game.models["floor"], world_pos, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
 				}
 			}
