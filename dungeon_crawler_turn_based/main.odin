@@ -158,6 +158,8 @@ main :: proc() {
 		grid_pos   = {1, 1},
 		facing     = 1, // Facing East
 		eye_height = TILE_SIZE / 2,
+		hp = 100,
+		mp = 10,
 	}
 	p.visual_pos = grid_to_world(p.grid_pos, p.eye_height)
 	p.target_yaw = f32(p.facing) * (math.PI / 2.0)
@@ -169,7 +171,7 @@ main :: proc() {
 		tile_debug = false,
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
-		shader = rl.LoadShader("shaders/basic.vs", "shaders/basic.fs"),
+		shader = rl.LoadShader("assets/shaders/basic.vs", "assets/shaders/basic.fs"),
 	}
 	game.current_map = game.maps[1]
 	game.current_map_id = 1
@@ -181,10 +183,10 @@ main :: proc() {
 		projection = .PERSPECTIVE,
 	}
 
-	game.models["wall"] = load_and_make_model("assets/wall_64x64_door-1.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
-	game.models["floor"] = load_and_make_model("assets/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	game.models["ceiling_1"] = load_and_make_model("assets/ceiling_64x64_transparent.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
-	game.models["door"] = load_and_make_model("assets/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
+	game.models["wall"] = load_and_make_model("assets/textures/wall_64x64_door-1.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
+	game.models["floor"] = load_and_make_model("assets/textures/floor_64x64.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["ceiling_1"] = load_and_make_model("assets/textures/ceiling_64x64_transparent.png", rl.Vector3{TILE_SIZE, 0.01, TILE_SIZE})
+	game.models["door"] = load_and_make_model("assets/textures/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 
 	add_shader_to_model(&game)
 
@@ -199,9 +201,9 @@ main :: proc() {
 
 	update_shader_values(&game)
 
-	button_texture := rl.LoadTexture("assets/Button_Blue.png")
+	button_texture := rl.LoadTexture("assets/textures/Button_Blue.png")
 	defer rl.UnloadTexture(button_texture)
-	button_pressed_texture := rl.LoadTexture("assets/Button_Blue_Pressed.png")
+	button_pressed_texture := rl.LoadTexture("assets/textures/Button_Blue_Pressed.png")
 	defer rl.UnloadTexture(button_pressed_texture)
 
 	button := Button{
@@ -221,6 +223,10 @@ main :: proc() {
 	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	game.ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
+
+	// fonts
+	font := rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0)
+    defer rl.UnloadFont(font)
 
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
@@ -325,6 +331,19 @@ main :: proc() {
         )
 		rl.DrawRectangleLinesEx(game.ui_container, 4, OUTLINE_UI)
 		draw_button(button)
+
+		// font testing
+		player_hp_str := strings.clone_to_cstring(fmt.tprintf("HP: %v", game.player.hp))
+		player_mp_str := strings.clone_to_cstring(fmt.tprintf("MP: %v", game.player.mp))
+	    defer delete(player_hp_str)
+		defer delete(player_mp_str)
+        player_hp_str_pos := rl.Vector2{WIDTH + 10, 100}
+		player_mp_str_pos := rl.Vector2{WIDTH + 10, 120}
+        font_size: f32 = 20
+        spacing: f32 = 2
+        rl.DrawTextEx(font, player_hp_str, player_hp_str_pos, font_size, spacing, rl.DARKGRAY)
+		rl.DrawTextEx(font, player_mp_str, player_mp_str_pos, font_size, spacing, rl.DARKGRAY)
+
 		if game.debug {
 			draw_debug(game, button)
 		}

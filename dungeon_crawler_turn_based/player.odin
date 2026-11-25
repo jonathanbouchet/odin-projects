@@ -10,4 +10,6 @@ Player :: struct {
 	target_yaw:  f32,
 	eye_height:  f32,
 	next_tile: i32,
+	hp: i32,
+	mp: i32,
 }
