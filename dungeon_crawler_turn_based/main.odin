@@ -1,5 +1,7 @@
 package main
 
+import "core:encoding/json"
+import "core:os"
 import "core:mem"
 import "core:fmt"
 import "core:strings"
@@ -36,33 +38,6 @@ load_and_make_model :: proc(path: string, dim: rl.Vector3) -> rl.Model {
 	return model
 }
 
-// 1 = Wall, 0 = Floor, 2 = Door
-
-DUNGEON_MAP: Dungeon_Map = {
-	[MAP_W][MAP_H]int {
-		{1, 2, 1, 1, 1, 1, 1, 1},
-		{1, 0, 0, 0, 1, 0, 0, 1},
-		{1, 0, 1, 0, 1, 0, 1, 1},
-		{1, 0, 1, 0, 0, 0, 0, 1},
-		{1, 0, 1, 1, 1, 1, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 1, 1, 0, 1, 1, 1, 1},
-		{1, 1, 1, 1, 1, 1, 1, 1},
-	},
-}
-DUNGEON_MAP_2: Dungeon_Map = {
-	[MAP_W][MAP_H]int {
-		{1, 1, 1, 2, 1, 1, 1, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 1, 1},
-		{1, 0, 0, 0, 0, 0, 1, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 0, 0, 0, 0, 0, 0, 1},
-		{1, 1, 1, 1, 1, 1, 1, 1},
-	},
-}
-
 // Cardinal directions: 0 = North (-Z), 1 = East (+X), 2 = South (+Z), 3 = West (-X)
 DIR_VECTORS := [4][2]int {
 	{0, -1}, // North
@@ -72,14 +47,14 @@ DIR_VECTORS := [4][2]int {
 }
 
 is_walkable :: proc(game: Game, x, z: int) -> bool {
-	if z < 0 || z >= len(game.current_map.data) || x < 0 || x >= len(game.current_map.data[0]) {
+	if z < 0 || z >= len(game.current_map) || x < 0 || x >= len(game.current_map[0]) {
 		return false
 	}
-	return game.current_map.data[z][x] == 0
+	return game.current_map[z][x] == 0
 }
 
 get_tile_id :: proc(game: Game, x, z: int) -> i32 {
-	return i32(game.current_map.data[z][x])
+	return i32(game.current_map[z][x])
 }
 
 grid_to_world :: proc(grid_pos: [2]int, y: f32) -> rl.Vector3 {
@@ -156,6 +131,24 @@ main :: proc() {
 	defer rl.CloseWindow()
 	rl.SetTargetFPS(60)
 
+	map_data: Map_Data
+    data, success := os.read_entire_file("maps.json", context.temp_allocator)
+
+    if success != nil {
+		fmt.println("Failed to read file.")
+		return
+	} 
+    fmt.println("File read successfully")
+    err := json.unmarshal(data, &map_data)
+    if err != nil {
+        fmt.printf("JSON Parsing Error: %v\n", err)
+        return
+    }
+    fmt.println("Map Data:", map_data)
+    fmt.printfln("1st Map : %v", map_data.data[0])
+    fmt.println(typeid_of(type_of(map_data.data[0])))
+	defer delete(map_data.data)
+
 	p := Player {
 		grid_pos   = {1, 1},
 		facing     = 1, // Facing East
@@ -168,14 +161,14 @@ main :: proc() {
 	p.visual_yaw = p.target_yaw
 
 	game:= Game{
-		maps = [2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
+		maps = map_data,//[2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
 		debug = true,
 		tile_debug = false,
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
 		shader = rl.LoadShader("assets/shaders/basic.vs", "assets/shaders/basic.fs"),
 	}
-	game.current_map = game.maps[1]
+	game.current_map = game.maps.data[1]
 	game.current_map_id = 1
 
 	camera := rl.Camera3D {
@@ -304,17 +297,17 @@ main :: proc() {
         rl.ClearBackground(BACKGROUND)
 
 		rl.BeginMode3D(camera)
-		for z in 0 ..< len(game.current_map.data) {
-			for x in 0 ..< len(game.current_map.data[0]) {
+		for z in 0 ..< len(game.current_map) {
+			for x in 0 ..< len(game.current_map[0]) {
 				world_pos := grid_to_world({x, z}, 0)
 				world_pos_ceiling := grid_to_world({x, z}, 1)
-				if game.current_map.data[z][x] == 1 {
+				if game.current_map[z][x] == 1 {
 					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(game.models["wall"], wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 					if game.tile_debug{
 						rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
 					}
-				} else if game.current_map.data[z][x] == 2 {
+				} else if game.current_map[z][x] == 2 {
 					door_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
 					rl.DrawModelEx(game.models["door"], door_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
 				} else {
