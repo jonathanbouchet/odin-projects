@@ -6,6 +6,8 @@ import "core:strings"
 import "core:math"
 import "core:math/linalg"
 import rl "vendor:raylib"
+import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
+import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 TILE_SIZE :: 1.0
 MAP_W :: 8
@@ -190,7 +192,7 @@ main :: proc() {
 
 	add_shader_to_model(&game)
 
-	game.light_direction = {-1.0, -1.0, -1.0}
+	game.light_direction = {0, 0, 0} // initial values at 0 completely disable the shader
 	// light_direction := game.player.visual_pos
 	game.light_color = {1.0, 1.0, 1.0}
     game.ambient_color = {1.0, 1.0, 1.0}
@@ -228,8 +230,29 @@ main :: proc() {
 	font := rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0)
     defer rl.UnloadFont(font)
 
+	imgui.CreateContext(nil)
+	defer imgui.DestroyContext(nil)
+
+    // Initialize ImGui Backend
+    rlimgui.init()
+    defer rlimgui.shutdown()
+
 	for !rl.WindowShouldClose() {
 		dt := rl.GetFrameTime()
+
+		// call imgui
+		light_direction := game.light_direction
+		light_color := game.light_color
+		ambient_color := game.ambient_color
+        imgui_display(&light_direction, &light_color, &ambient_color)
+		game.light_direction = light_direction
+		game.light_color = light_color
+		game.ambient_color = ambient_color
+		update_shader_values(&game)
+        // update_shader_values(
+        //     &light_direction, &light_color, &ambient_color,
+        //     int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
+        //     shader)
 
 		// 1. Handle Turn Input (90-degree increments)
 		if rl.IsKeyPressed(.Q) || rl.IsKeyPressed(.LEFT) {
@@ -347,6 +370,10 @@ main :: proc() {
 		if game.debug {
 			draw_debug(game, button)
 		}
+
+		imgui.Render()
+		rlimgui.render_draw_data(imgui.GetDrawData())
+
 		rl.EndDrawing()
 	}
 }
