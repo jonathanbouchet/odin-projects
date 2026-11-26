@@ -241,19 +241,9 @@ main :: proc() {
 		dt := rl.GetFrameTime()
 
 		// call imgui
-		light_direction := game.light_direction
-		light_color := game.light_color
-		ambient_color := game.ambient_color
-        imgui_display(&light_direction, &light_color, &ambient_color)
-		game.light_direction = light_direction
-		game.light_color = light_color
-		game.ambient_color = ambient_color
+		imgui_display(&game)
 		update_shader_values(&game)
-        // update_shader_values(
-        //     &light_direction, &light_color, &ambient_color,
-        //     int(light_direction_loc), int(light_color_loc), int(ambient_color_loc), 
-        //     shader)
-
+		
 		// 1. Handle Turn Input (90-degree increments)
 		if rl.IsKeyPressed(.Q) || rl.IsKeyPressed(.LEFT) {
 			game.player.facing = (game.player.facing + 3) % 4 // Wrap -1 to 3

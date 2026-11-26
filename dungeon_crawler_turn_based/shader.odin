@@ -3,17 +3,11 @@ package main
 import rl "vendor:raylib"
 
 add_shader_to_model :: proc(game: ^Game) {
-    for i in 0..<int(game.models["wall"].materialCount){
-        game.models["wall"].materials[i].shader = game.shader
-    }
-	for i in 0..<int(game.models["floor"].materialCount){
-        game.models["floor"].materials[i].shader = game.shader
-    }
-	for i in 0..<int(game.models["ceiling_1"].materialCount){
-        game.models["ceiling_1"].materials[i].shader = game.shader
-    }
-	for i in 0..<int(game.models["door"].materialCount){
-        game.models["door"].materials[i].shader = game.shader
+    model_names := [4]string{"wall", "floor", "ceiling_1", "door"}
+    for model_name in model_names{
+        for i in 0..<int(game.models[model_name].materialCount){
+            game.models[model_name].materials[i].shader = game.shader
+        }
     }
 }
 

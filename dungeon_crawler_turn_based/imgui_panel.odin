@@ -7,10 +7,7 @@ import rl "vendor:raylib"
 import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
-imgui_display :: proc(light_pos: ^[3]f32, light_color: ^[3]f32, ambient_color: ^[3]f32) {
-    // ld: ^[3]f32 = &game.light_direction
-    // lc: ^[3]f32 = &game.light_color
-    // ac: ^[3]f32 = &game.ambient_color
+imgui_display :: proc(game: ^Game) {
     style := imgui.GetStyle()
     style.FontScaleMain = 1.0
     
@@ -31,34 +28,32 @@ imgui_display :: proc(light_pos: ^[3]f32, light_color: ^[3]f32, ambient_color: ^
     imgui.TextUnformatted(fps_cstring)
     imgui.TextUnformatted(window_size_text_cstring)
 
-    imgui.SeparatorText("light direction")
-    imgui.SliderFloat3("##LightDir", light_pos, 0.0, 1.0, "%.2f")
+    imgui.SeparatorText("light position")
+    imgui.SliderFloat3("##LightPos", &game.light_direction, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##LD"){
-        light_pos[0] = -1.0
-        light_pos[1] = -1.0
-        light_pos[2] = -1.0
+        game.light_direction[0] = 0.0
+        game.light_direction[1] = 0.0
+        game.light_direction[2] = 0.0
     }
 
     imgui.SeparatorText("light color")
-    imgui.SliderFloat3("##LightColor", light_color, 0.0, 1.0, "%.2f")
+    imgui.SliderFloat3("##LightColor", &game.light_color, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##LC"){
-        light_color[0] = 0.7
-        light_color[1] = 0.7
-        light_color[2] = 0.7
+        game.light_color[0] = 1.0
+        game.light_color[1] = 1.0
+        game.light_color[2] = 1.0
     }
 
     imgui.SeparatorText("ambient color")
-    imgui.SliderFloat3("##Ambient", ambient_color, 0.0, 1.0, "%.2f")
+    imgui.SliderFloat3("##Ambient", &game.ambient_color, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##AC"){
-        ambient_color[0] = 0.25
-        ambient_color[1] = 0.25
-        ambient_color[2] = 0.25
+        game.ambient_color[0] = 1.0
+        game.ambient_color[1] = 1.0
+        game.ambient_color[2] = 1.0
     }
-
-    // fmt.printfln("light direction : %v, light color: %v, ambient color: %v", light_pos, light_color, ambient_color)
 
     imgui.End()
 }
