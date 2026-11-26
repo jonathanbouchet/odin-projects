@@ -192,14 +192,7 @@ main :: proc() {
 
 	add_shader_to_model(&game)
 
-	game.light_direction = {0, 0, 0} // initial values at 0 completely disable the shader
-	// light_direction := game.player.visual_pos
-	game.light_color = {1.0, 1.0, 1.0}
-    game.ambient_color = {1.0, 1.0, 1.0}
-
-    game.light_direction_loc = rl.GetShaderLocation(game.shader, "lightDirection")
-    game.light_color_loc = rl.GetShaderLocation(game.shader, "lightColor")
-    game.ambient_color_loc = rl.GetShaderLocation(game.shader, "ambientColor")
+	set_lighting(&game)
 
 	update_shader_values(&game)
 
@@ -243,7 +236,7 @@ main :: proc() {
 		// call imgui
 		imgui_display(&game)
 		update_shader_values(&game)
-		
+
 		// 1. Handle Turn Input (90-degree increments)
 		if rl.IsKeyPressed(.Q) || rl.IsKeyPressed(.LEFT) {
 			game.player.facing = (game.player.facing + 3) % 4 // Wrap -1 to 3

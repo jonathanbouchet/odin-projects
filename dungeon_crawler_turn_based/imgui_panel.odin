@@ -29,30 +29,30 @@ imgui_display :: proc(game: ^Game) {
     imgui.TextUnformatted(window_size_text_cstring)
 
     imgui.SeparatorText("light position")
-    imgui.SliderFloat3("##LightPos", &game.light_direction, 0.0, 1.0, "%.2f")
+    imgui.SliderFloat3("##LightPos", &game.lighting.light_direction, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##LD"){
-        game.light_direction[0] = 0.0
-        game.light_direction[1] = 0.0
-        game.light_direction[2] = 0.0
+        game.lighting.light_direction[0] = 0.0
+        game.lighting.light_direction[1] = 0.0
+        game.lighting.light_direction[2] = 0.0
     }
 
     imgui.SeparatorText("light color")
-    imgui.SliderFloat3("##LightColor", &game.light_color, 0.0, 1.0, "%.2f")
+    imgui.SliderFloat3("##LightColor", &game.lighting.light_color, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##LC"){
-        game.light_color[0] = 1.0
-        game.light_color[1] = 1.0
-        game.light_color[2] = 1.0
+        game.lighting.light_color[0] = 1.0
+        game.lighting.light_color[1] = 1.0
+        game.lighting.light_color[2] = 1.0
     }
 
     imgui.SeparatorText("ambient color")
-    imgui.SliderFloat3("##Ambient", &game.ambient_color, 0.0, 1.0, "%.2f")
+    imgui.SliderFloat3("##Ambient", &game.lighting.ambient_color, 0.0, 1.0, "%.2f")
     imgui.SameLine()
     if imgui.Button("reset##AC"){
-        game.ambient_color[0] = 1.0
-        game.ambient_color[1] = 1.0
-        game.ambient_color[2] = 1.0
+        game.lighting.ambient_color[0] = 1.0
+        game.lighting.ambient_color[1] = 1.0
+        game.lighting.ambient_color[2] = 1.0
     }
 
     imgui.End()
