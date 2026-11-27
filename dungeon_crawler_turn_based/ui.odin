@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:strings"
 import rl "vendor:raylib"
 
 BUTTON_STATE :: enum{
@@ -46,4 +47,32 @@ draw_button :: proc(b: Button) {
         current_texture = b.textures[0]
     }
     rl.DrawTextureEx(current_texture, b.position, b.rotation, b.scale, rl.RAYWHITE)
+}
+
+draw_ui :: proc(game: Game) {
+    rl.DrawTextureRec(
+        game.view.texture,
+        rl.Rectangle{0, 0, f32(WIDTH), -f32(HEIGHT)},
+        rl.Vector2{0, 0},
+        rl.WHITE,
+    )
+    rl.DrawRectangleLinesEx(game.ui_container, 4, OUTLINE_UI)
+    draw_button(game.button)
+
+    // font testing
+    player_hp_str := strings.clone_to_cstring(fmt.tprintf("HP\t%v", game.player.hp))
+    player_mp_str := strings.clone_to_cstring(fmt.tprintf("MP\t%v", game.player.mp))
+    defer delete(player_hp_str)
+    defer delete(player_mp_str)
+    player_hp_str_pos := rl.Vector2{WIDTH + 10, 100}
+    player_mp_str_pos := rl.Vector2{WIDTH + 10, 120}
+    font_size: f32 = 20
+    spacing: f32 = 2
+    rl.DrawTextEx(game.font, player_hp_str, player_hp_str_pos, font_size, spacing, rl.DARKGRAY)
+    rl.DrawTextEx(game.font, player_mp_str, player_mp_str_pos, font_size, spacing, rl.DARKGRAY)
+
+    if game.debug {
+		draw_debug(game, game.button)
+	}
+
 }

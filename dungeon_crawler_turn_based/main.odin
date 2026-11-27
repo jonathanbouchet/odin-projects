@@ -167,6 +167,8 @@ main :: proc() {
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
 		shader = rl.LoadShader("assets/shaders/basic.vs", "assets/shaders/basic.fs"),
+		font = rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0),
+		ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT},
 	}
 	game.current_map_id = 0
 	game.current_map = game.maps.data[game.current_map_id]
@@ -184,9 +186,7 @@ main :: proc() {
 	game.models["door"] = load_and_make_model("assets/textures/wall_64x64_door-2.png", rl.Vector3{TILE_SIZE, TILE_SIZE, TILE_SIZE})
 
 	add_shader_to_model(&game)
-
 	set_lighting(&game)
-
 	update_shader_values(&game)
 
 	button_texture := rl.LoadTexture("assets/textures/Button_Blue.png")
@@ -194,7 +194,7 @@ main :: proc() {
 	button_pressed_texture := rl.LoadTexture("assets/textures/Button_Blue_Pressed.png")
 	defer rl.UnloadTexture(button_pressed_texture)
 
-	button := Button{
+	game.button = Button{
 		position = rl.Vector2{WIDTH + 10, 20},
 		textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
 		rotation = 0,
@@ -210,11 +210,7 @@ main :: proc() {
 	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	game.ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT}
-
-	// fonts
-	font := rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0)
-    defer rl.UnloadFont(font)
+	defer rl.UnloadFont(game.font)
 
 	imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
@@ -283,7 +279,7 @@ main :: proc() {
 		camera.target = game.player.visual_pos + look_dir
 
 		// ui updates
-		update_button(&button)
+		update_button(&game.button)
 
 		// shaders update
 		// light_direction = game.player.visual_pos
@@ -294,59 +290,16 @@ main :: proc() {
 
 		// render game window
         rl.BeginTextureMode(game.view)
-        rl.ClearBackground(BACKGROUND)
-
+		rl.ClearBackground(BACKGROUND)
 		rl.BeginMode3D(camera)
-		for z in 0 ..< len(game.current_map) {
-			for x in 0 ..< len(game.current_map[0]) {
-				world_pos := grid_to_world({x, z}, 0)
-				world_pos_ceiling := grid_to_world({x, z}, 1)
-				if game.current_map[z][x] == 1 {
-					wall_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
-					rl.DrawModelEx(game.models["wall"], wall_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
-					if game.tile_debug{
-						rl.DrawCubeWires(wall_pos, TILE_SIZE, TILE_SIZE, TILE_SIZE, rl.RED)
-					}
-				} else if game.current_map[z][x] == 2 {
-					door_pos := rl.Vector3{world_pos.x, TILE_SIZE / 2.0, world_pos.z}
-					rl.DrawModelEx(game.models["door"], door_pos, rl.Vector3{0, 1, 0}, 0.0, 1.0, rl.RAYWHITE)
-				} else {
-					rl.DrawModelEx(game.models["ceiling_1"], world_pos_ceiling, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-					rl.DrawModelEx(game.models["floor"], world_pos, rl.Vector3{1, 0, 0}, 0.0, 1.0, rl.RAYWHITE)
-				}
-			}
-		}
+		draw_level(game)
 		rl.EndMode3D()
 		rl.EndTextureMode()
 
 		// render UI
 		rl.BeginDrawing()
         rl.ClearBackground(BACKGROUND_UI)
-		rl.DrawTextureRec(
-            game.view.texture,
-            rl.Rectangle{0, 0, f32(WIDTH), -f32(HEIGHT)},
-            rl.Vector2{0, 0},
-            rl.WHITE,
-        )
-		rl.DrawRectangleLinesEx(game.ui_container, 4, OUTLINE_UI)
-		draw_button(button)
-
-		// font testing
-		player_hp_str := strings.clone_to_cstring(fmt.tprintf("HP: %v", game.player.hp))
-		player_mp_str := strings.clone_to_cstring(fmt.tprintf("MP: %v", game.player.mp))
-	    defer delete(player_hp_str)
-		defer delete(player_mp_str)
-        player_hp_str_pos := rl.Vector2{WIDTH + 10, 100}
-		player_mp_str_pos := rl.Vector2{WIDTH + 10, 120}
-        font_size: f32 = 20
-        spacing: f32 = 2
-        rl.DrawTextEx(font, player_hp_str, player_hp_str_pos, font_size, spacing, rl.DARKGRAY)
-		rl.DrawTextEx(font, player_mp_str, player_mp_str_pos, font_size, spacing, rl.DARKGRAY)
-
-		if game.debug {
-			draw_debug(game, button)
-		}
-
+		draw_ui(game)
 		imgui.Render()
 		rlimgui.render_draw_data(imgui.GetDrawData())
 
