@@ -45,3 +45,16 @@ draw_level :: proc(game: Game) {
         }
     }
 }
+
+defer_delete :: proc(game: Game){
+    // cleanup when the game closes
+    defer delete(game.models)
+	defer rl.UnloadShader(game.shader)
+	defer rl.UnloadModel(game.models["wall"])
+	defer rl.UnloadModel(game.models["floor"])
+	defer rl.UnloadModel(game.models["ceiling_1"])
+	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
+	defer rl.UnloadFont(game.font)
+}

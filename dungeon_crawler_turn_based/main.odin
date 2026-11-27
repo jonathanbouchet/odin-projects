@@ -189,28 +189,17 @@ main :: proc() {
 	set_lighting(&game)
 	update_shader_values(&game)
 
-	button_texture := rl.LoadTexture("assets/textures/Button_Blue.png")
-	defer rl.UnloadTexture(button_texture)
-	button_pressed_texture := rl.LoadTexture("assets/textures/Button_Blue_Pressed.png")
-	defer rl.UnloadTexture(button_pressed_texture)
-
 	game.button = Button{
 		position = rl.Vector2{WIDTH + 10, 20},
-		textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
+		textures = [2]rl.Texture2D{
+			rl.LoadTexture("assets/textures/Button_Blue.png"), 
+			rl.LoadTexture("assets/textures/Button_Blue_Pressed.png"),
+		},
+		// textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
 		rotation = 0,
 		scale = 1.0,
 		state = .ACTIVE,
 	}
-
-	defer delete(game.models)
-	defer rl.UnloadShader(game.shader)
-	defer rl.UnloadModel(game.models["wall"])
-	defer rl.UnloadModel(game.models["floor"])
-	defer rl.UnloadModel(game.models["ceiling_1"])
-	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadFont(game.font)
 
 	imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
@@ -305,4 +294,5 @@ main :: proc() {
 
 		rl.EndDrawing()
 	}
+	defer_delete(game)
 }
