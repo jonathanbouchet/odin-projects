@@ -12,8 +12,8 @@ import imgui "../../../ODIN_REPO/external_packages/odin-imgui-main"
 import rlimgui "../../../ODIN_REPO/external_packages/backend/rlimgui"
 
 TILE_SIZE :: 1.0
-MAP_W :: 8
-MAP_H :: 8
+MAP_W :: 10
+MAP_H :: 10
 MOVE_SPEED :: 8.0 // Interpolation speed for movement
 TURN_SPEED :: 8.0 // Interpolation speed for rotation
 BACKGROUND :: rl.Color{20, 20, 20, 255}
@@ -132,7 +132,7 @@ main :: proc() {
 	rl.SetTargetFPS(60)
 
 	map_data: Map_Data
-    data, success := os.read_entire_file("maps.json", context.temp_allocator)
+    data, success := os.read_entire_file("maps_10x10.json", context.temp_allocator)
 
     if success != nil {
 		fmt.println("Failed to read file.")
@@ -161,15 +161,15 @@ main :: proc() {
 	p.visual_yaw = p.target_yaw
 
 	game:= Game{
-		maps = map_data,//[2]Dungeon_Map{DUNGEON_MAP, DUNGEON_MAP_2},
+		maps = map_data,
 		debug = true,
 		tile_debug = false,
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
 		shader = rl.LoadShader("assets/shaders/basic.vs", "assets/shaders/basic.fs"),
 	}
-	game.current_map = game.maps.data[1]
-	game.current_map_id = 1
+	game.current_map_id = 0
+	game.current_map = game.maps.data[game.current_map_id]
 
 	camera := rl.Camera3D {
 		position   = game.player.visual_pos,
