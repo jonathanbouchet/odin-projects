@@ -9,6 +9,12 @@ BUTTON_STATE :: enum{
 	PRESSED,
 }
 
+Ui_Main :: struct {
+    ui_container: rl.Rectangle,
+    font: rl.Font,
+    buttons: [dynamic]Button,
+}
+
 Button :: struct {
     position: rl.Vector2,
     textures: [2]rl.Texture2D,
@@ -56,8 +62,10 @@ draw_ui :: proc(game: Game) {
         rl.Vector2{0, 0},
         rl.WHITE,
     )
-    rl.DrawRectangleLinesEx(game.ui_container, 4, OUTLINE_UI)
-    draw_button(game.button)
+    rl.DrawRectangleLinesEx(game.ui.ui_container, 4, OUTLINE_UI)
+    for button in game.ui.buttons{
+        draw_button(button)
+    }
 
     // font testing
     player_hp_str := strings.clone_to_cstring(fmt.tprintf("HP\t%v", game.player.hp))
@@ -68,11 +76,11 @@ draw_ui :: proc(game: Game) {
     player_mp_str_pos := rl.Vector2{WIDTH + 10, 120}
     font_size: f32 = 20
     spacing: f32 = 2
-    rl.DrawTextEx(game.font, player_hp_str, player_hp_str_pos, font_size, spacing, rl.DARKGRAY)
-    rl.DrawTextEx(game.font, player_mp_str, player_mp_str_pos, font_size, spacing, rl.DARKGRAY)
+    rl.DrawTextEx(game.ui.font, player_hp_str, player_hp_str_pos, font_size, spacing, rl.DARKGRAY)
+    rl.DrawTextEx(game.ui.font, player_mp_str, player_mp_str_pos, font_size, spacing, rl.DARKGRAY)
 
     if game.debug {
-		draw_debug(game, game.button)
+		draw_debug(game)
 	}
 
 }

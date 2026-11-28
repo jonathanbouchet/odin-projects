@@ -61,14 +61,14 @@ grid_to_world :: proc(grid_pos: [2]int, y: f32) -> rl.Vector3 {
 	return {f32(grid_pos.x) * TILE_SIZE, y, f32(grid_pos.y) * TILE_SIZE}
 }
 
-draw_debug :: proc(game: Game, b: Button) {
+draw_debug :: proc(game: Game) {
     /*
     various "debug" utils:
     - draw the FPS number
     - draw lines, h and v, representing the mid-screen
     */
-	button_str := strings.clone_to_cstring(fmt.tprintf("BUTTON: %v", b.state))
-    defer delete(button_str)
+	// button_str := strings.clone_to_cstring(fmt.tprintf("BUTTON: %v", b.state))
+    // defer delete(button_str)
 	current_map_str := strings.clone_to_cstring(fmt.tprintf("MAP: %v", game.current_map_id))
     defer delete(current_map_str)
 	player_pos_str := strings.clone_to_cstring(fmt.tprintf("[%v, %v], NEXT TILE ID %v", game.player.grid_pos[0], game.player.grid_pos[1], game.player.next_tile))
@@ -76,7 +76,7 @@ draw_debug :: proc(game: Game, b: Button) {
     rl.DrawFPS(0, 0)
 	rl.DrawText(current_map_str, 0, 20, 20, CROSSHAIR)
 	rl.DrawText(player_pos_str, 0, 40, 20, CROSSHAIR)
-	rl.DrawText(button_str, 0, 60, 20, CROSSHAIR)
+	// rl.DrawText(button_str, 0, 60, 20, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{0, HEIGHT_FULL/2}, {WIDTH, HEIGHT_FULL/2}, CROSSHAIR)
     rl.DrawLineV(rl.Vector2{WIDTH/2, 0}, {WIDTH/2, HEIGHT}, CROSSHAIR)
 }
@@ -160,6 +160,11 @@ main :: proc() {
 	p.target_yaw = f32(p.facing) * (math.PI / 2.0)
 	p.visual_yaw = p.target_yaw
 
+	ui_main: Ui_Main = {
+		ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT},
+		font = rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0),
+	}
+
 	game:= Game{
 		maps = map_data,
 		debug = true,
@@ -167,11 +172,23 @@ main :: proc() {
 		view = rl.LoadRenderTexture(i32(WIDTH), i32(HEIGHT)), // game window
 		player = p,
 		shader = rl.LoadShader("assets/shaders/basic.vs", "assets/shaders/basic.fs"),
-		font = rl.LoadFontEx("assets/fonts/pixantiqua.ttf", 48, nil, 0),
-		ui_container = rl.Rectangle{f32(WIDTH), 0, f32(WIDTH_UI), HEIGHT},
+		ui = ui_main,
 	}
 	game.current_map_id = 0
 	game.current_map = game.maps.data[game.current_map_id]
+
+	button := Button{
+		position = rl.Vector2{WIDTH + 10, 20},
+		textures = [2]rl.Texture2D{
+			rl.LoadTexture("assets/textures/Button_Blue.png"), 
+			rl.LoadTexture("assets/textures/Button_Blue_Pressed.png"),
+		},
+		rotation = 0,
+		scale = 1.0,
+		state = .ACTIVE,
+	}
+
+	append(&game.ui.buttons, button)
 
 	camera := rl.Camera3D {
 		position   = game.player.visual_pos,
@@ -189,17 +206,7 @@ main :: proc() {
 	set_lighting(&game)
 	update_shader_values(&game)
 
-	game.button = Button{
-		position = rl.Vector2{WIDTH + 10, 20},
-		textures = [2]rl.Texture2D{
-			rl.LoadTexture("assets/textures/Button_Blue.png"), 
-			rl.LoadTexture("assets/textures/Button_Blue_Pressed.png"),
-		},
-		// textures = [2]rl.Texture2D{button_texture, button_pressed_texture},
-		rotation = 0,
-		scale = 1.0,
-		state = .ACTIVE,
-	}
+	fmt.printfln("game: %v", game)
 
 	imgui.CreateContext(nil)
 	defer imgui.DestroyContext(nil)
@@ -267,8 +274,14 @@ main :: proc() {
 		camera.position = game.player.visual_pos
 		camera.target = game.player.visual_pos + look_dir
 
-		// ui updates
-		update_button(&game.button)
+		// ui button update
+		for &b in game.ui.buttons {
+			update_button(&b)
+		}
+
+		// for i:= 0 ;i < len(game.ui.buttons) ; i +=1 {
+		// 	update_button(&game.ui.buttons[i])
+		// }
 
 		// shaders update
 		// light_direction = game.player.visual_pos

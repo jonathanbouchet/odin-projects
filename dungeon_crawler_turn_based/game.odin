@@ -15,13 +15,11 @@ Game :: struct {
     current_map: Dungeon_Data, // current map used
     current_map_id: int, // index of the current map used
     view: rl.RenderTexture2D, // 'playable' view dimension with respect the all game window
-    ui_container: rl.Rectangle, // dimnesion of the UI view
+    ui: Ui_Main,
     player: Player, // player
     models: map[string]rl.Model, // models used by tiles,
     shader: rl.Shader,
     lighting: Lighting,
-    font: rl.Font,
-    button: Button, //testing: it sould be an array of UI element in the future
 }
 
 draw_level :: proc(game: Game) {
@@ -53,8 +51,10 @@ defer_delete :: proc(game: Game){
 	defer rl.UnloadModel(game.models["wall"])
 	defer rl.UnloadModel(game.models["floor"])
 	defer rl.UnloadModel(game.models["ceiling_1"])
+    // defer rl.UnloadTexture(game.button.textures[1])
+    // defer rl.UnloadTexture(game.button.textures[0])
 	defer rl.UnloadTexture(game.models["wall"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["floor"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
 	defer rl.UnloadTexture(game.models["ceiling_1"].materials[0].maps[rl.MaterialMapIndex.ALBEDO].texture)
-	defer rl.UnloadFont(game.font)
+	defer rl.UnloadFont(game.ui.font)
 }
